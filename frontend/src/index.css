@@ -1,0 +1,21 @@
+@import "tailwindcss";
+/*
+Source - https://stackoverflow.com/a/79527127
+Posted by rozsazoltan, modified by community. See post 'Timeline' for change history
+Retrieved 2025-11-27, License - CC BY-SA 4.0
+*/
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+#root {
+  min-height: 100vh;
+}
+/* 
+body .dark{
+  background-color: #0F0F1A;
+  color: white;
+}
+
+body .light{
+   background-color: white;
+} */
