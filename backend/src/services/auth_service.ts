@@ -2,6 +2,7 @@ import { Signup } from "../types/Signup";
 import UserRepository from "../repository/user_repository"
 import { AppError } from "../utils/AppError";
 import logger from "../config/logger";
+import { IUserModel } from "../interface/IuserModel";
 import { comparePassword, hashPassword } from "../utils/hashPassword";
 import { SignupRequestDTO, SignupResponseDTO } from "../dtos/signup.dto";
 import { IUserRepository } from "../interface/IUserRepository";
@@ -89,6 +90,7 @@ export class AuthService implements IAuthService {
             createdAt:user.createdAt,
             isVerified:user.isVerified,
             phone:user.phone,
+            onboardingCompleted: user.onboardingCompleted || false,
             accessToken,
             refreshToken,
         }
@@ -113,13 +115,40 @@ export class AuthService implements IAuthService {
                 phone: user.phone,
                 isVerified: user.isVerified,
                 createdAt: user.createdAt,
-                isBlocked: user.isBlocked
+                isBlocked: user.isBlocked,
+                onboardingCompleted: user.onboardingCompleted || false
             }
     }
 
-    
+    getAllUsers = async (limit: number = 20, offset: number = 0): Promise<IUserModel[]> => {
+        try {
+            return await this.userRepository.findAll(limit, offset);
+        } catch (error) {
+            throw new AppError("Failed to fetch users", 500);
+        }
+    }
 
-
-
-
-}   
+    updateProfile = async (userId: string, data: { fullname?: string }): Promise<GetMeResponseDTO> => {
+        try {
+            const updatedUser = await this.userRepository.update(userId, data);
+            if (!updatedUser) {
+                throw new AppError("User not found", 404);
+            }
+            return {
+                userId: updatedUser._id.toString(),
+                email: updatedUser.email,
+                fullname: updatedUser.fullname,
+                phone: updatedUser.phone,
+                isVerified: updatedUser.isVerified,
+                createdAt: updatedUser.createdAt,
+                isBlocked: updatedUser.isBlocked,
+                onboardingCompleted: updatedUser.onboardingCompleted || false
+            };
+        } catch (error) {
+            if (error instanceof AppError) {
+                throw error;
+            }
+            throw new AppError("Failed to update profile", 550);
+        }
+    }
+}

@@ -9,5 +9,7 @@ declare namespace NodeJS {
     REFRESH_TOKEN_EXPIRY:string;
     FRONTEND_URL:string;
     NODE_ENV:string;
+    GEMINI_API_KEY:string;
+    FOOD_DATA_API_KEY:string;
   }
 }

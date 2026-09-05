@@ -24,4 +24,14 @@ export default class UserRepository implements IUserRepository{
         return await UserModel.findById(data)
     }
 
+    async findAll(limit: number = 20, offset: number = 0): Promise<IUserModel[]> {
+        return await UserModel.find({})
+            .skip(offset)
+            .limit(limit)
+            .select("-password"); // Never select or return passwords
+    }
+
+    async update(id: string, data: Partial<IUserModel>): Promise<IUserModel | null> {
+        return await UserModel.findByIdAndUpdate(id, { $set: data }, { new: true });
+    }
 }

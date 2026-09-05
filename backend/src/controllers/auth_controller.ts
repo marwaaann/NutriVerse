@@ -79,5 +79,48 @@ export class AuthController implements IAuthController{
             next(error)
         }
     }
-    
+
+    logout = async(req: Request, res: Response, next: NextFunction):Promise<void>=>{
+        try {
+            res.clearCookie("accessToken",{
+                httpOnly:true,
+                secure:ENV.NODE_ENV==="production",
+                sameSite:"strict",
+            })
+
+            res.clearCookie("refreshToken",{
+                httpOnly:true,
+                secure:ENV.NODE_ENV==="production",
+                sameSite:"strict",
+            })
+
+            apiResponse(res,200,true,"Logout successfully",null)
+        } catch (error) {
+            next(error)
+        }
+    }
+
+    getAllUsers = async(req: Request, res: Response, next: NextFunction):Promise<void>=>{
+        try {
+            const { limit = 20, offset = 0 } = req.query;
+            const users = await this.authService.getAllUsers(Number(limit), Number(offset));
+            apiResponse(res, 200, true, "Users fetched successfully", users);
+        } catch (error) {
+            next(error)
+        }
+    }
+
+    updateProfile = async(req: Request, res: Response, next: NextFunction):Promise<void>=>{
+        try {
+            const userId = req.user?.user_Id;
+            if (!userId) {
+                throw new AppError("UNAUTHORIZED", 401);
+            }
+            const { fullname } = req.body;
+            const user = await this.authService.updateProfile(userId, { fullname });
+            apiResponse(res, 200, true, "Profile updated successfully", user);
+        } catch (error) {
+            next(error)
+        }
+    }
 }

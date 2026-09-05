@@ -6,4 +6,5 @@ export interface GetMeResponseDTO {
   isVerified: boolean;
   createdAt: Date;
   isBlocked: boolean;
+  onboardingCompleted: boolean;
 }

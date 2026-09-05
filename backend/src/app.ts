@@ -24,6 +24,17 @@ app.use(cookieparser())
 app.use(requestLogger)
 app.use("/auth",auth_Routes)
 
+import { recipeController, notificationController, agentController } from "./container/container";
+import { createRecipeRoutes } from "./routes/recipe_routes";
+import { createNotificationRoutes } from "./routes/notification_routes";
+import mealplannerRoutes from "./routes/mealplanner_routes";
+import { createAgentRoutes } from "./routes/agent_routes";
+
+app.use("/api/recipes", createRecipeRoutes(recipeController));
+app.use("/api/notifications", createNotificationRoutes(notificationController));
+app.use("/api/mealplanner", mealplannerRoutes);
+app.use("/api/agent", createAgentRoutes(agentController));
+
 app.use(globalErrorHandler)
 
 export default app;

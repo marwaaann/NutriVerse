@@ -6,8 +6,15 @@ import { ENV } from "./config/env";
 
 
 
-connectDB();
+import { migrateMissingNutrition } from "./config/migrateNutrition";
+
+connectDB().then(() => {
+  migrateMissingNutrition();
+});
 const PORT:number = Number(ENV.PORT)|| 5000
-app.listen(PORT,()=>{
+const server = app.listen(PORT,()=>{
     console.log(`🚀 Server running at http://localhost:${PORT}`);
-})  
+});
+
+import { initializeWebSocketServer } from "./websocket/websocket.server";
+initializeWebSocketServer(server);  

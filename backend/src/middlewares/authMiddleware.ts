@@ -7,7 +7,14 @@ import { TokenUserPayload } from "../types/TokenUserPayload";
 
 export const authMiddleware=(req:Request,res:Response,next:NextFunction)=>{
     try {
-        const accessToken=req.cookies.accessToken
+        let accessToken = req.cookies.accessToken;
+
+        if (!accessToken && req.headers.authorization) {
+            const parts = req.headers.authorization.split(" ");
+            if (parts.length === 2 && parts[0] === "Bearer") {
+                accessToken = parts[1];
+            }
+        }
 
         if(!accessToken){
             throw new AppError("NOT_AUTHENTICATED",401)
@@ -24,6 +31,10 @@ export const authMiddleware=(req:Request,res:Response,next:NextFunction)=>{
         next()
 
     } catch (error) {
-        throw new AppError("INVALID_TOKEN",401)
+        if (error instanceof AppError) {
+            next(error);
+        } else {
+            next(new AppError("INVALID_TOKEN", 401));
+        }
     }
 }

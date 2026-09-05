@@ -37,6 +37,10 @@ const userSchema = new Schema<IUserModel>(
     isDeleted:{
         type:Boolean,
         default:false
+    },
+    onboardingCompleted:{
+        type:Boolean,
+        default:false
     }
   },
   {

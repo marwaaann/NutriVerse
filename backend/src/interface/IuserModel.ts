@@ -10,4 +10,5 @@ export interface IUserModel {
   updatedAt: Date;
   isBlocked:boolean;
   isDeleted:boolean;
+  onboardingCompleted: boolean;
 }
