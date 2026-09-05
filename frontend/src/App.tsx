@@ -10,6 +10,17 @@ import { useAuth } from './hooks/useAuth';
 import Layout from './layout/UserLayout';
 import { ProtectedRoute } from './componets/ProtectedRoutes/ProtectedRoutes';
 
+import { RecipesList } from './pages/RecipesList';
+import { CreateRecipe } from './pages/CreateRecipe';
+import { RecipeDetail } from './pages/RecipeDetail';
+import { Dashboard } from './pages/Dashboard';
+import { Users } from './pages/Users';
+import { Settings } from './pages/Settings';
+import { ChatOverview } from './pages/ChatOverview';
+import { Onboarding } from './pages/Onboarding';
+import { Grocery } from './pages/Grocery';
+import { EditRecipe } from './pages/EditRecipe';
+
 function App() {
 
   const mode = useAppSelector((state)=>state.theme.mode)
@@ -40,8 +51,18 @@ function App() {
         <Route path="signup" element={<SignupPage />} />
         <Route path="signin" element={<SigninPage />} />
       </Route>
-      <Route path="/" element={<Navigate to="/home"/>}/>
-      <Route path='/home'element={<ProtectedRoute><Layout><h1>hey</h1></Layout></ProtectedRoute>}/>
+      <Route path="/" element={<Navigate to="/dashboard"/>}/>
+      <Route path='/home' element={<Navigate to="/dashboard"/>}/>
+      <Route path='/onboarding' element={<ProtectedRoute><Onboarding /></ProtectedRoute>}/>
+      <Route path='/dashboard' element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>}/>
+      <Route path='/grocery' element={<ProtectedRoute><Layout><Grocery /></Layout></ProtectedRoute>}/>
+      <Route path='/users' element={<ProtectedRoute><Layout><Users /></Layout></ProtectedRoute>}/>
+      <Route path='/settings' element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>}/>
+      <Route path='/chat' element={<ProtectedRoute><Layout><ChatOverview /></Layout></ProtectedRoute>}/>
+      <Route path='/recipes' element={<ProtectedRoute><Layout><RecipesList /></Layout></ProtectedRoute>}/>
+      <Route path='/recipes/create' element={<ProtectedRoute><Layout><CreateRecipe /></Layout></ProtectedRoute>}/>
+      <Route path='/recipes/edit/:id' element={<ProtectedRoute><Layout><EditRecipe /></Layout></ProtectedRoute>}/>
+      <Route path='/recipes/:id' element={<ProtectedRoute><Layout><RecipeDetail /></Layout></ProtectedRoute>}/>
       <Route path='/match/stream' element={<StreamPage children={"hery"}/>}/>
     </Routes>
     </>

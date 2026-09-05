@@ -6,26 +6,63 @@ import NotificationIcon from '../Buttons/NotifcationIconButton';
 import { useAppSelector } from '../../types/ThemeHookType';
 import Tooltip from '../ToolTip/TootTip';
 // import Tooltip from '../ToolTip/ToolTip';
-// import logoutUser from '../../services/logoutUser';
-// import {useDispatch} from "react-redux";
-// import { useAppDispatch } from '../types/ThemeHookType';
-
+import { logoutUser } from '../../services/logoutUser';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { notificationService } from "../../services/notificationService";
+import { useAuth } from "../../hooks/useAuth";
+import { Trash2, CheckCircle2 } from "lucide-react";
 
 export default function Headers() {
     const [open, setOpen] = useState(false);
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
     const mode = useAppSelector((state)=>state.theme.mode)
-    // const dispatch=useDispatch()
-    // const navigate=useNavigate()
+    const navigate = useNavigate();
 
+    const queryClient = useQueryClient();
+    const { data: user } = useAuth();
+
+    const { data: notifications = [] } = useQuery({
+      queryKey: ["notifications"],
+      queryFn: () => notificationService.getNotifications(),
+      refetchInterval: 5000,
+      enabled: !!user
+    });
+
+    const { data: unreadCount = 0 } = useQuery({
+      queryKey: ["notificationUnreadCount"],
+      queryFn: () => notificationService.getUnreadCount(),
+      refetchInterval: 5500,
+      enabled: !!user
+    });
+
+    const markAsReadMutation = useMutation({
+      mutationFn: (id: string) => notificationService.markAsRead(id),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        queryClient.invalidateQueries({ queryKey: ["notificationUnreadCount"] });
+      }
+    });
+
+    const markAllAsReadMutation = useMutation({
+      mutationFn: () => notificationService.markAllAsRead(),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        queryClient.invalidateQueries({ queryKey: ["notificationUnreadCount"] });
+      }
+    });
+
+    const deleteNotificationMutation = useMutation({
+      mutationFn: (id: string) => notificationService.deleteNotification(id),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        queryClient.invalidateQueries({ queryKey: ["notificationUnreadCount"] });
+      }
+    });
 
     const onLogout=async()=>{
         console.log("logout clicked")
-        // const res=await logoutUser()
-        // console.log(res)
-        // dispatch(clearAccessToken())
-        // dispatch(clearUser())
-        // window.location.replace("/signin");
-
+        await logoutUser();
+        window.location.replace("/auth/signin");
     }
 
   return (
@@ -36,32 +73,49 @@ export default function Headers() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
         <div className="flex justify-between h-16 items-center">
 
+          {/* Logo / Brand */}
+          <div className="flex items-center space-x-2">
+            <div className="bg-amber-500 text-white p-2 rounded-lg font-bold text-lg flex items-center justify-center w-9 h-9">
+              N
+            </div>
+            <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+              NutriVerse
+            </span>
+          </div>
+
           {/* Desktop nav */} 
           <nav className="hidden md:flex items-center space-x-6">
             <NavLink
               to="/dashboard"
-              className={({ isActive }) =>`px-2 py-1 rounded transition ${isActive? "text-indigo-600 font-semibold dark:text-indigo-400": "text-gray-600 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400"}`}
+              className={({ isActive }) =>`px-2 py-1 rounded transition ${isActive? "text-amber-600 font-semibold dark:text-amber-400": "text-gray-600 hover:text-amber-500 dark:text-gray-300 dark:hover:text-amber-400"}`}
             >
-              Dashboard
+              Home
             </NavLink>
 
             <NavLink
-              to="/users"
-              className={({ isActive }) =>`px-2 py-1 rounded transition ${isActive? "text-indigo-600 font-semibold dark:text-indigo-400": "text-gray-600 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400"}`}
+              to="/recipes"
+              className={({ isActive }) =>`px-2 py-1 rounded transition ${isActive? "text-amber-600 font-semibold dark:text-amber-400": "text-gray-600 hover:text-amber-500 dark:text-gray-300 dark:hover:text-amber-400"}`}
             >
-              Users
+              Recipes
+            </NavLink>
+
+            <NavLink
+              to="/grocery"
+              className={({ isActive }) =>`px-2 py-1 rounded transition ${isActive? "text-amber-600 font-semibold dark:text-amber-400": "text-gray-600 hover:text-amber-500 dark:text-gray-300 dark:hover:text-amber-400"}`}
+            >
+              Grocery List
             </NavLink>
 
             <NavLink
               to="/chat"
-              className={({ isActive }) =>`px-2 py-1 rounded transition ${isActive? "text-indigo-600 font-semibold dark:text-indigo-400": "text-gray-600 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400"}`}
+              className={({ isActive }) =>`px-2 py-1 rounded transition ${isActive? "text-amber-600 font-semibold dark:text-amber-400": "text-gray-600 hover:text-amber-500 dark:text-gray-300 dark:hover:text-amber-400"}`}
             >
-              Chat
+              AI Assistant
             </NavLink>
 
             <NavLink
               to="/settings"
-              className={({ isActive }) =>`px-2 py-1 rounded transition ${isActive? "text-indigo-600 font-semibold dark:text-indigo-400": "text-gray-600 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400"}`}
+              className={({ isActive }) =>`px-2 py-1 rounded transition ${isActive? "text-amber-600 font-semibold dark:text-amber-400": "text-gray-600 hover:text-amber-500 dark:text-gray-300 dark:hover:text-amber-400"}`}
             >
               Settings
             </NavLink>
@@ -77,9 +131,84 @@ export default function Headers() {
                 <ToggleButton/>
             </Tooltip>
 
-            <Tooltip content="view all notification" position='bottom'>
-                <NotificationIcon/>
-            </Tooltip>
+            <div className="relative">
+              <Tooltip content="view all notifications" position='bottom'>
+                  <NotificationIcon count={unreadCount} onClick={() => setNotificationsOpen(!notificationsOpen)} />
+              </Tooltip>
+
+              {notificationsOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl p-4 space-y-3 z-50">
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <h3 className="font-extrabold text-sm text-zinc-900 dark:text-white">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          markAllAsReadMutation.mutate();
+                        }}
+                        className="text-[10px] font-bold text-amber-600 hover:text-amber-700 dark:text-amber-500 hover:underline cursor-pointer"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
+                    {notifications.length === 0 ? (
+                      <div className="py-6 text-center text-xs text-zinc-400 dark:text-zinc-500">
+                        You're all caught up 🎉
+                      </div>
+                    ) : (
+                      notifications.map((n) => (
+                        <div 
+                          key={n._id}
+                          onClick={() => {
+                            if (!n.isRead) markAsReadMutation.mutate(n._id);
+                          }}
+                          className={`flex justify-between items-start gap-2 p-2 rounded-xl text-left transition cursor-pointer ${
+                            n.isRead ? "opacity-70 bg-transparent" : "bg-amber-50/40 dark:bg-zinc-800/40 border border-amber-100/30"
+                          }`}
+                        >
+                          <div className="flex gap-2 items-start text-xs">
+                            <span className="mt-0.5 shrink-0">
+                              {n.type === "Recipe Created" ? "🍽️" :
+                               n.type === "Recipe Updated" ? "📝" :
+                               n.type === "Recipe Deleted" ? "🗑️" :
+                               n.type === "Meal Plan Ready" ? "📅" :
+                               n.type === "Grocery List Ready" ? "🛒" : "🔔"}
+                            </span>
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <p className="font-bold text-zinc-800 dark:text-zinc-200">{n.title}</p>
+                                {!n.isRead && (
+                                  <span className="h-1.5 w-1.5 bg-amber-500 rounded-full shrink-0 animate-ping" />
+                                )}
+                              </div>
+                              <p className="text-zinc-450 dark:text-zinc-500 mt-0.5 text-[11px] leading-snug">{n.message}</p>
+                              <span className="text-[10px] text-zinc-400 dark:text-zinc-650 mt-1 block">
+                                {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              deleteNotificationMutation.mutate(n._id);
+                            }}
+                            className="p-1 text-zinc-400 hover:text-red-500 rounded transition cursor-pointer shrink-0"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </nav>
 
           {/* Mobile: hamburger */}
@@ -126,15 +255,23 @@ export default function Headers() {
               onClick={() => setOpen(false)}
               className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
-              Dashboard
+              Home
             </NavLink>
 
             <NavLink
-              to="/users"
+              to="/recipes"
               onClick={() => setOpen(false)}
               className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
-              Users
+              Recipes
+            </NavLink>
+
+            <NavLink
+              to="/grocery"
+              onClick={() => setOpen(false)}
+              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Grocery List
             </NavLink>
 
             <NavLink
@@ -142,15 +279,15 @@ export default function Headers() {
               onClick={() => setOpen(false)}
               className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
-              Chat
+              AI Assistant
             </NavLink>
 
             <NavLink
-              to="/about"
+              to="/settings"
               onClick={() => setOpen(false)}
               className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
-              About
+              Settings
             </NavLink>
 
             <button

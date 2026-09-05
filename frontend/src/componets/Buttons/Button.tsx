@@ -1,13 +1,13 @@
 
 
-function Button({title,type,isLoading}:{title:string,type:"submit"|"reset"|"button",isLoading:boolean}) {
+function Button({title,type,isLoading,loadingTitle}:{title:string,type:"submit"|"reset"|"button",isLoading:boolean,loadingTitle?:string}) {
   return (
     <button
             type={type}
             disabled={isLoading}
-            className="w-full bg-black text-white py-2 rounded-lg hover:bg-gray-800"
+            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl transition duration-200 shadow-sm cursor-pointer disabled:opacity-50"
           >
-            {!isLoading?title:"Please wait.."}
+            {!isLoading?title:(loadingTitle || "Please wait..")}
     </button>
   )
 }

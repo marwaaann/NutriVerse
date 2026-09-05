@@ -109,7 +109,7 @@ const onSubmit = async(data: SignupFormType) => {
           </div>
           <p className="text-red-500 text-sm">{errors.confirmPassword?.message?.toString()}</p>
 
-         <Button isLoading={isLoading} title="Sign Up" type="submit"/>
+         <Button isLoading={isLoading} loadingTitle="Creating account..." title="Sign Up" type="submit"/>
 
         </form>
 

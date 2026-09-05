@@ -7,7 +7,9 @@ export type SignupResponse = {
     phone:string;
     isBlocked:boolean;
     isDeleted:boolean;
-    createdAt:Date
+    createdAt:Date;
+    fullname?: string;
+    onboardingCompleted?: boolean;
   };
 };
 
