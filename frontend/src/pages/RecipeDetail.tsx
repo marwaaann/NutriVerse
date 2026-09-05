@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { recipeService } from "../services/recipeService";
 import type { RecipeResponse } from "../services/recipeService";
-import { ArrowLeft, Clock, Users, Flame, Info, HeartPulse, RefreshCw } from "lucide-react";
+import { ArrowLeft, Clock, Users, Flame, HeartPulse, RefreshCw } from "lucide-react";
 
 export const RecipeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();

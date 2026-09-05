@@ -11,12 +11,9 @@ import {
   Trash2, 
   Heart, 
   ShieldAlert, 
-  Clock, 
-  Flame, 
   ArrowRight, 
   ArrowLeft, 
   Sparkles,
-  Search,
   Check
 } from "lucide-react";
 
@@ -44,10 +41,9 @@ const ALLERGY_OPTIONS = [
 ];
 
 export const Onboarding: React.FC = () => {
-  const { data: authResponse } = useAuth();
+  const { data: user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const user = authResponse?.user;
 
   const [step, setStep] = useState(1);
   const [fullname, setFullname] = useState(user?.fullname || "");
@@ -61,7 +57,6 @@ export const Onboarding: React.FC = () => {
   const [newMemberDiet, setNewMemberDiet] = useState("Non-vegetarian");
   const [newMemberAllergies, setNewMemberAllergies] = useState<string[]>([]);
   const [newMemberCuisines, setNewMemberCuisines] = useState<string[]>([]);
-  const [allergySearch, setAllergySearch] = useState("");
   const [customAllergy, setCustomAllergy] = useState("");
 
   // Primary Preferences
@@ -69,7 +64,7 @@ export const Onboarding: React.FC = () => {
   const [selectedNonVeg, setSelectedNonVeg] = useState<string[]>(["Chicken", "Eggs"]);
   const [selectedCuisines, setSelectedCuisines] = useState<string[]>(["Indian"]);
   const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
-  const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>([]);
+  const [dietaryRestrictions] = useState<string[]>([]);
   const [healthGoals, setHealthGoals] = useState<string[]>(["Balanced eating"]);
   const [cookingTime, setCookingTime] = useState("30 minute meals");
   const [spiceLevel, setSpiceLevel] = useState("Medium");

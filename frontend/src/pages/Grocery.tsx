@@ -5,10 +5,7 @@ import {
   ShoppingCart, 
   Check, 
   Trash2, 
-  Share2, 
   RefreshCw, 
-  Sparkles, 
-  Calendar,
   MessageCircle,
   Plus
 } from "lucide-react";

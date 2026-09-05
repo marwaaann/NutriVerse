@@ -1,19 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import axiosInstance from "../api/axiosInstance";
 import { showToast } from "../utils/toast";
 import { 
   Flame, 
-  HeartPulse, 
   Activity, 
   Sparkles, 
   RotateCw, 
   ShoppingCart, 
   MessageSquare, 
   Plus, 
-  Check, 
-  AlertCircle,
   HelpCircle,
   Video
 } from "lucide-react";
@@ -50,9 +47,7 @@ const cleanDishName = (name: string): string => {
 };
 
 export const Dashboard: React.FC = () => {
-  const { data: authResponse } = useAuth();
-  const navigate = useNavigate();
-  const user = authResponse?.user;
+  const { data: user } = useAuth();
 
   // Selected date state (defaults to today YYYY-MM-DD)
   const todayStr = new Date().toISOString().split("T")[0];

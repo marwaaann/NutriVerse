@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { recipeService } from "../services/recipeService";
 import type { IngredientInput } from "../services/recipeService";
-import { ArrowLeft, Plus, Trash2, Save, Sparkles, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, Loader2, CheckCircle2 } from "lucide-react";
 import { showToast } from "../utils/toast";
 
 export const EditRecipe: React.FC = () => {

@@ -1,4 +1,3 @@
-import React from 'react'
 import type { AuthRedirectTextType } from '../../types/AuthRedirectTextType'
 import { Link } from 'react-router-dom'
 

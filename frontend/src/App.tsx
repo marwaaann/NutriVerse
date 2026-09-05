@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import './App.css'
 import { Routes, Route, Navigate, } from "react-router-dom";
 import SignupPage from './pages/Signup';
@@ -6,7 +6,6 @@ import StreamPage from './pages/StreamPage';
 import { Toaster } from 'react-hot-toast';
 import SigninPage from './pages/Signin';
 import { useAppSelector } from './types/ThemeHookType';
-import { useAuth } from './hooks/useAuth';
 import Layout from './layout/UserLayout';
 import { ProtectedRoute } from './componets/ProtectedRoutes/ProtectedRoutes';
 

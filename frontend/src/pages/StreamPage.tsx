@@ -1,6 +1,6 @@
-import React from 'react'
+import type { ReactNode } from 'react'
 
-function StreamPage({children}) {
+function StreamPage({ children }: { children?: ReactNode }) {
   return (
     <>
       <div className="min-h-screen flex flex-col bg-gray-100">

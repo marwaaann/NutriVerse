@@ -1,6 +1,6 @@
-import React,{useState} from 'react'
+import { useState } from 'react'
 // import {useSelector} from 'react-redux'
-import {NavLink,useNavigate} from "react-router-dom";
+import {NavLink} from "react-router-dom";
 import ToggleButton from '../Buttons/ThemeButton';
 import NotificationIcon from '../Buttons/NotifcationIconButton';
 import { useAppSelector } from '../../types/ThemeHookType';
@@ -10,14 +10,12 @@ import { logoutUser } from '../../services/logoutUser';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { notificationService } from "../../services/notificationService";
 import { useAuth } from "../../hooks/useAuth";
-import { Trash2, CheckCircle2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
 export default function Headers() {
     const [open, setOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const mode = useAppSelector((state)=>state.theme.mode)
-    const navigate = useNavigate();
-
     const queryClient = useQueryClient();
     const { data: user } = useAuth();
 

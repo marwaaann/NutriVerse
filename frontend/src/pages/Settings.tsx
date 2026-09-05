@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { userService } from "../services/userService";
 import { useQueryClient } from "@tanstack/react-query";
@@ -8,7 +9,6 @@ import {
   Settings as SettingsIcon, 
   Moon, 
   Sun, 
-  Bell, 
   ShieldAlert, 
   Save,
   Mail,
@@ -28,7 +28,7 @@ export const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"profile" | "appearance" | "security">("profile");
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleSaveProfile = async (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: FormEvent) => {
     e.preventDefault();
     if (!fullname.trim()) {
       showToast.error("Name cannot be empty");

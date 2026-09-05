@@ -14,3 +14,14 @@ export type SignupResponse = {
 };
 
 export type SigninResponse = & SignupResponse
+
+export type AuthUser = {
+  userId: string;
+  email: string;
+  fullname: string;
+  phone: string;
+  isVerified: boolean;
+  createdAt: Date;
+  isBlocked: boolean;
+  onboardingCompleted: boolean;
+};
