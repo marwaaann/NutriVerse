@@ -59,6 +59,7 @@ export default function Headers() {
 
     const onLogout=async()=>{
         console.log("logout clicked")
+        localStorage.removeItem("nutriverse_ai_chat_history");
         await logoutUser();
         window.location.replace("/auth/signin");
     }

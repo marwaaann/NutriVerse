@@ -36,9 +36,11 @@ axiosInstance.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Unauthorized session
+      localStorage.removeItem("nutriverse_ai_chat_history");
     }
     if(inValidMessages.includes(error?.response?.data?.message)){
         // window.location.href = "/auth/signin"
+        localStorage.removeItem("nutriverse_ai_chat_history");
         return Promise.reject(error);
     }
 

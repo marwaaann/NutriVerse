@@ -9,12 +9,15 @@ import {
   Clock,
   Users,
   CheckCircle,
-  BookOpen
+  BookOpen,
+  Trash2
 } from "lucide-react";
 import { recipeService } from "../services/recipeService";
 import { Link } from "react-router-dom";
 import { FormattedAiMessage } from "../utils/formatAiMessage";
 import { showToast } from "../utils/toast";
+
+const CHAT_STORAGE_KEY = "nutriverse_ai_chat_history";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -23,6 +26,21 @@ interface ChatMessage {
   generatedRecipe?: any;
   savedRecipeId?: string;
 }
+
+const loadStoredMessages = (): ChatMessage[] => {
+  try {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.error("Failed to load chat history from localStorage:", err);
+  }
+  return [];
+};
 
 const SUGGESTED_QUESTIONS = [
   "High protein chicken dinner under 600 calories",
@@ -50,7 +68,7 @@ const RecipeImage: React.FC<{ src: string; title: string }> = ({ src, title }) =
 };
 
 export const ChatOverview: React.FC = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(loadStoredMessages);
   const [inputMessage, setInputMessage] = useState("");
   const [status, setStatus] = useState<"connecting" | "connected" | "disconnected">("disconnected");
   const [isTyping, setIsTyping] = useState(false);
@@ -119,6 +137,23 @@ export const ChatOverview: React.FC = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping, chatError]);
+
+  // Persist messages to localStorage whenever they update
+  useEffect(() => {
+    try {
+      const toSave = messages.length > 100 ? messages.slice(-100) : messages;
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(toSave));
+    } catch (err) {
+      console.error("Failed to save chat history to localStorage:", err);
+    }
+  }, [messages]);
+
+  const handleClearChat = () => {
+    if (window.confirm("Are you sure you want to clear your chat history?")) {
+      setMessages([]);
+      localStorage.removeItem(CHAT_STORAGE_KEY);
+    }
+  };
 
   const handleSendMessage = (text: string) => {
     if (!text.trim() || !socketRef.current || status !== "connected") return;
@@ -214,11 +249,23 @@ export const ChatOverview: React.FC = () => {
               <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">Tell me what you want to eat, and I'll create it.</p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-800 px-3 py-1 rounded-full border border-zinc-100 dark:border-zinc-700">
-            <span className={`h-2 w-2 rounded-full ${
-              status === "connected" ? "bg-green-500 animate-pulse" : status === "connecting" ? "bg-amber-500 animate-bounce" : "bg-red-500"
-            }`} />
-            <span className="text-[10px] text-zinc-500 font-bold capitalize">{status}</span>
+          <div className="flex items-center gap-3">
+            {messages.length > 0 && (
+              <button
+                onClick={handleClearChat}
+                className="text-xs text-zinc-400 hover:text-red-500 dark:hover:text-red-400 flex items-center gap-1.5 font-semibold px-2.5 py-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+                title="Clear chat history"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>Clear</span>
+              </button>
+            )}
+            <div className="flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-800 px-3 py-1 rounded-full border border-zinc-100 dark:border-zinc-700">
+              <span className={`h-2 w-2 rounded-full ${
+                status === "connected" ? "bg-green-500 animate-pulse" : status === "connecting" ? "bg-amber-500 animate-bounce" : "bg-red-500"
+              }`} />
+              <span className="text-[10px] text-zinc-500 font-bold capitalize">{status}</span>
+            </div>
           </div>
         </div>
 
