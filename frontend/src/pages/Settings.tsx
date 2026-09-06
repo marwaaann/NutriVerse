@@ -9,7 +9,6 @@ import {
   Settings as SettingsIcon, 
   Moon, 
   Sun, 
-  ShieldAlert, 
   Save,
   Mail,
   Phone
@@ -25,7 +24,7 @@ export const Settings: React.FC = () => {
   const currentMode = useAppSelector((state) => state.theme.mode);
 
   const [fullname, setFullname] = useState(user?.fullname || "");
-  const [activeTab, setActiveTab] = useState<"profile" | "appearance" | "security">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "appearance">("profile");
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSaveProfile = async (e: FormEvent) => {
@@ -57,7 +56,7 @@ export const Settings: React.FC = () => {
           <SettingsIcon className="h-7 w-7 text-indigo-600" /> Account Settings
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Customize your experience, update profile information, and configure notification settings.
+          Customize your experience, update profile information, and configure appearance settings.
         </p>
       </div>
 
@@ -83,16 +82,6 @@ export const Settings: React.FC = () => {
             }`}
           >
             <Moon className="h-4.5 w-4.5" /> Appearance
-          </button>
-          <button
-            onClick={() => setActiveTab("security")}
-            className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2.5 ${
-              activeTab === "security" 
-                ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400" 
-                : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-            }`}
-          >
-            <ShieldAlert className="h-4.5 w-4.5" /> Security
           </button>
         </div>
 
@@ -188,26 +177,6 @@ export const Settings: React.FC = () => {
                   <Moon className="h-7 w-7" />
                   <span className="text-sm font-semibold">Dark Mode</span>
                 </button>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "security" && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Security Settings</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Review your current account credentials status.
-                </p>
-              </div>
-
-              <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 text-sm space-y-2">
-                <p className="text-gray-600 dark:text-gray-400">
-                  Password Status: <span className="font-semibold text-green-600">Encrypted / Active</span>
-                </p>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Verification Status: <span className="font-semibold text-indigo-600">{user?.isVerified ? "Verified" : "Pending Verification"}</span>
-                </p>
               </div>
             </div>
           )}
