@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { recipeService } from "../services/recipeService";
 import type { RecipeResponse } from "../services/recipeService";
-import { ArrowLeft, Clock, Users, Flame, HeartPulse, RefreshCw } from "lucide-react";
+import { ArrowLeft, Clock, Users, Flame, HeartPulse, RefreshCw, ShoppingCart } from "lucide-react";
 
 export const RecipeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -47,7 +47,7 @@ export const RecipeDetail: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12 space-y-6 animate-pulse">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-6 animate-pulse">
         <div className="h-6 bg-zinc-200 dark:bg-zinc-800 rounded w-1/4" />
         <div className="h-10 bg-zinc-200 dark:bg-zinc-800 rounded w-3/4" />
         <div className="h-64 bg-zinc-200 dark:bg-zinc-800 rounded w-full" />
@@ -57,7 +57,7 @@ export const RecipeDetail: React.FC = () => {
 
   if (error || !recipe) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-red-500">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center text-red-500">
         <p>{error || "Recipe not found."}</p>
         <Link to="/recipes" className="text-amber-500 hover:underline mt-4 inline-block">Back to recipes</Link>
       </div>
@@ -65,7 +65,7 @@ export const RecipeDetail: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Back Button */}
       <Link
         to="/recipes"
@@ -97,7 +97,14 @@ export const RecipeDetail: React.FC = () => {
             <h1 className="text-3xl md:text-4xl font-extrabold text-zinc-900 dark:text-white">
               {recipe.title}
             </h1>
-            <div className="flex gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => navigate(`/grocery?recipeId=${recipe._id}`)}
+                className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
+                title="View required shopping list of ingredients in Grocery"
+              >
+                <ShoppingCart className="h-4 w-4" /> Shop Ingredients
+              </button>
               <button
                 onClick={async () => {
                   if (confirm("Are you sure you want to delete this recipe?")) {
@@ -234,7 +241,15 @@ export const RecipeDetail: React.FC = () => {
 
         {/* Ingredients list */}
         <div className="mb-8">
-          <h2 className="text-2xl font-extrabold text-zinc-900 dark:text-white mb-4">Ingredients</h2>
+          <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
+            <h2 className="text-2xl font-extrabold text-zinc-900 dark:text-white">Ingredients</h2>
+            <button
+              onClick={() => navigate(`/grocery?recipeId=${recipe._id}`)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-bold transition border border-amber-200 dark:border-amber-800 cursor-pointer"
+            >
+              <ShoppingCart className="h-3.5 w-3.5" /> View in Grocery List
+            </button>
+          </div>
           <ul className="space-y-3">
             {recipe.ingredients.map((ing, idx) => (
               <li
