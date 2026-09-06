@@ -98,12 +98,6 @@ export const RecipeDetail: React.FC = () => {
               {recipe.title}
             </h1>
             <div className="flex gap-2 shrink-0">
-              <Link
-                to={`/recipes/edit/${recipe._id}`}
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
-              >
-                Edit
-              </Link>
               <button
                 onClick={async () => {
                   if (confirm("Are you sure you want to delete this recipe?")) {

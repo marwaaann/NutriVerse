@@ -1,5 +1,4 @@
 import axios from "axios";
-import { GoogleGenAI } from "@google/genai";
 import { ENV } from "../config/env";
 import logger from "../config/logger";
 import { cloudinaryService } from "./cloudinary_service";
@@ -64,6 +63,14 @@ function getCuratedDishFallback(title: string): string | null {
     return "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80"; // Dal / Lentils
   }
 
+  // Indian Sweets & Desserts (Mithai)
+  if (t.includes("ladoo") || t.includes("laddu") || t.includes("besan") || t.includes("motichoor") || t.includes("mithai") || t.includes("peda") || t.includes("barfi")) {
+    return "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80"; // Authentic Indian Sweet / Ladoo
+  }
+  if (t.includes("gulab jamun") || t.includes("jalebi") || t.includes("rasgulla") || t.includes("halwa") || t.includes("kheer") || t.includes("payasam")) {
+    return "https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&w=800&q=80"; // Indian Dessert
+  }
+
   // Chicken & Poultry (Cooked plated meals)
   if (t.includes("chicken") || t.includes("poultry") || t.includes("turkey") || t.includes("wings")) {
     return "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=800&q=80"; // Golden roasted cooked chicken dinner
@@ -123,83 +130,35 @@ function getCuratedDishFallback(title: string): string | null {
   return null;
 }
 
-const GENERIC_FOOD_FALLBACK = "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=600&q=80";
+const GENERIC_FOOD_FALLBACK = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80";
 
 class RecipeImageService {
   /**
-   * Generates a dish image via AI (Imagen 3), uploads to Cloudinary if available,
-   * or falls back gracefully to Unsplash / curated photography.
+   * Generates an authentic dish image via AI (Pollinations text-to-image), uploads to Cloudinary permanently,
+   * or falls back gracefully to curated dish photography uploaded to Cloudinary.
    */
   public async resolveRecipeImage(recipe: RecipeImageInput): Promise<RecipeImageResult> {
     const title = recipe.title || "Delicious Meal";
     const prompt = buildRecipeImagePrompt(recipe);
 
-    // 1. Attempt AI generation via Gemini Imagen 3 if API key exists
-    if (ENV.GEMINI_API_KEY && ENV.GEMINI_API_KEY !== "YOUR_GEMINI_API_KEY" && ENV.GEMINI_API_KEY.trim() !== "") {
-      try {
-        logger.info(`Generating AI dish image with prompt: "${prompt}"`);
-        const ai = new GoogleGenAI({ apiKey: ENV.GEMINI_API_KEY });
-        
-        const response = await ai.models.generateImages({
-          model: "imagen-3.0-generate-002",
-          prompt: prompt,
-          config: {
-            numberOfImages: 1,
-            outputMimeType: "image/jpeg",
-            aspectRatio: "4:3",
-          },
-        });
+    // 1. High-Fidelity AI Dish Generation via Pollinations -> Upload directly to Cloudinary
+    try {
+      logger.info(`Generating AI dish image for "${title}" with prompt: "${prompt}"`);
+      const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=600&nologo=true&seed=${Math.floor(Math.random() * 10000)}`;
 
-        const imageBytes = response?.generatedImages?.[0]?.image?.imageBytes;
-        if (imageBytes) {
-          const imageBuffer = Buffer.from(imageBytes, "base64");
-
-          // Upload to Cloudinary if configured
-          if (cloudinaryService.isAvailable()) {
-            const uploadRes = await cloudinaryService.uploadRecipeImage(imageBuffer, title);
-            if (uploadRes) {
-              return uploadRes;
-            }
-          }
-
-          // Return base64 data URI if Cloudinary is not configured
-          const dataUri = `data:image/jpeg;base64,${imageBytes}`;
-          return { url: dataUri };
+      if (cloudinaryService.isAvailable()) {
+        const uploadRes = await cloudinaryService.uploadRecipeImage(pollinationsUrl, title);
+        if (uploadRes) {
+          logger.info(`AI dish image saved to Cloudinary: ${uploadRes.url}`);
+          return uploadRes;
         }
-      } catch (error: any) {
-        logger.warn("Imagen image generation failed, using photographic fallback:", error?.message || error);
       }
+      return { url: pollinationsUrl };
+    } catch (aiErr: any) {
+      logger.warn("Pollinations AI generation failed, falling back to curated dish image:", aiErr?.message || aiErr);
     }
 
-    // 2. Unsplash API query fallback if key is configured
-    const unsplashKey = ENV.RECIPE_IMAGE_API_KEY;
-    if (unsplashKey) {
-      try {
-        const ingredientsText = (recipe.ingredients || []).slice(0, 2).map(i => i.name).join(" ");
-        const searchQuery = `${title} ${ingredientsText}`.replace(/[^a-zA-Z0-9\s]/g, "").trim();
-        logger.info(`Querying Unsplash API for: "${searchQuery}"`);
-
-        const res = await axios.get("https://api.unsplash.com/search/photos", {
-          params: { query: searchQuery, per_page: 1, orientation: "landscape" },
-          headers: { Authorization: `Client-ID ${unsplashKey}` },
-          timeout: 4000,
-        });
-
-        const unsplashUrl = res.data?.results?.[0]?.urls?.regular;
-        if (unsplashUrl) {
-          // If Cloudinary is available, optionally upload for permanence
-          if (cloudinaryService.isAvailable()) {
-            const uploadRes = await cloudinaryService.uploadRecipeImage(unsplashUrl, title);
-            if (uploadRes) return uploadRes;
-          }
-          return { url: unsplashUrl };
-        }
-      } catch (err: any) {
-        logger.warn("Unsplash API query failed:", err?.message || err);
-      }
-    }
-
-    // 3. Curated authentic dish dictionary fallback
+    // 2. Curated authentic dish dictionary fallback
     const curatedUrl = getCuratedDishFallback(title);
     if (curatedUrl) {
       if (cloudinaryService.isAvailable()) {
@@ -209,12 +168,21 @@ class RecipeImageService {
       return { url: curatedUrl };
     }
 
-    // 4. Final neutral food photography fallback
+    // 3. Category-specific neutral food photography fallback
+    const category = (recipe.category || "").toLowerCase();
+    const t = title.toLowerCase();
+    let fallbackUrl = GENERIC_FOOD_FALLBACK;
+    if (category.includes("dessert") || category.includes("sweet") || t.includes("sweet") || t.includes("dessert") || t.includes("ladoo") || t.includes("cake")) {
+      fallbackUrl = "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80"; // Dessert
+    } else if (category.includes("breakfast")) {
+      fallbackUrl = "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=800&q=80"; // Breakfast
+    }
+
     if (cloudinaryService.isAvailable()) {
-      const uploadRes = await cloudinaryService.uploadRecipeImage(GENERIC_FOOD_FALLBACK, title);
+      const uploadRes = await cloudinaryService.uploadRecipeImage(fallbackUrl, title);
       if (uploadRes) return uploadRes;
     }
-    return { url: GENERIC_FOOD_FALLBACK };
+    return { url: fallbackUrl };
   }
 }
 
