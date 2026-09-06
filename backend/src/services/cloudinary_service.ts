@@ -1,4 +1,4 @@
-﻿import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
+import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
 import { ENV } from "../config/env";
 import logger from "../config/logger";
 
@@ -14,7 +14,14 @@ class CloudinaryService {
         secure: true,
       });
       this.isConfigured = true;
-      logger.info("CloudinaryService initialized successfully");
+      logger.info("CloudinaryService initialized successfully via API keys");
+    } else if (ENV.CLOUDINARY_URL) {
+      cloudinary.config({
+        cloudinary_url: ENV.CLOUDINARY_URL,
+        secure: true,
+      });
+      this.isConfigured = true;
+      logger.info("CloudinaryService initialized successfully via CLOUDINARY_URL");
     } else {
       logger.warn("Cloudinary credentials not configured. Image uploads will fall back to direct photography URLs.");
     }

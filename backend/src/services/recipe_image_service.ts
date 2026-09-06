@@ -202,10 +202,18 @@ class RecipeImageService {
     // 3. Curated authentic dish dictionary fallback
     const curatedUrl = getCuratedDishFallback(title);
     if (curatedUrl) {
+      if (cloudinaryService.isAvailable()) {
+        const uploadRes = await cloudinaryService.uploadRecipeImage(curatedUrl, title);
+        if (uploadRes) return uploadRes;
+      }
       return { url: curatedUrl };
     }
 
     // 4. Final neutral food photography fallback
+    if (cloudinaryService.isAvailable()) {
+      const uploadRes = await cloudinaryService.uploadRecipeImage(GENERIC_FOOD_FALLBACK, title);
+      if (uploadRes) return uploadRes;
+    }
     return { url: GENERIC_FOOD_FALLBACK };
   }
 }
