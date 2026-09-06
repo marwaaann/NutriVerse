@@ -300,7 +300,12 @@ router.put("/plan/:date", async (req: Request, res: Response, next) => {
 router.get("/grocery", async (req: Request, res: Response, next) => {
   try {
     const userId = req.user?.user_Id;
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, all } = req.query;
+
+    if (all === "true" || (!startDate && !endDate)) {
+      const lists = await GroceryListModel.find({ userId }).sort({ updatedAt: -1 });
+      return apiResponse(res, 200, true, "Grocery lists loaded", lists);
+    }
 
     if (!startDate || !endDate) {
       throw new AppError("startDate and endDate are required", 400);
@@ -348,6 +353,7 @@ router.get("/grocery", async (req: Request, res: Response, next) => {
 
       groceryList = new GroceryListModel({
         userId,
+        title: `Meal Plan (${startDate} to ${endDate})`,
         startDate,
         endDate,
         items: Object.values(aggregatedItems).map(item => ({ ...item, purchased: false })),
@@ -356,6 +362,31 @@ router.get("/grocery", async (req: Request, res: Response, next) => {
     }
 
     return apiResponse(res, 200, true, "Grocery list loaded", groceryList);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/grocery", async (req: Request, res: Response, next) => {
+  try {
+    const userId = req.user?.user_Id;
+    if (!userId) {
+      throw new AppError("UNAUTHORIZED", 401);
+    }
+    const { title, items, recipeId } = req.body;
+    const today = new Date().toISOString().split("T")[0];
+
+    const groceryList = new GroceryListModel({
+      userId,
+      title: title || "New Grocery List",
+      recipeId: recipeId || undefined,
+      startDate: today,
+      endDate: today,
+      items: items || [],
+    });
+    await groceryList.save();
+
+    return apiResponse(res, 201, true, "Grocery list created", groceryList);
   } catch (error) {
     next(error);
   }
@@ -429,15 +460,35 @@ router.post("/grocery/generate", async (req: Request, res: Response, next) => {
   }
 });
 
+router.get("/grocery/:id", async (req: Request, res: Response, next) => {
+  try {
+    const userId = req.user?.user_Id;
+    const { id } = req.params;
+
+    const list = await GroceryListModel.findOne({ _id: id, userId });
+    if (!list) {
+      throw new AppError("Grocery list not found", 404);
+    }
+
+    return apiResponse(res, 200, true, "Grocery list loaded", list);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.put("/grocery/:id", async (req: Request, res: Response, next) => {
   try {
     const userId = req.user?.user_Id;
     const { id } = req.params;
-    const { items } = req.body;
+    const { title, items } = req.body;
+
+    const updateQuery: Record<string, any> = {};
+    if (title !== undefined) updateQuery.title = title;
+    if (items !== undefined) updateQuery.items = items;
 
     const list = await GroceryListModel.findOneAndUpdate(
       { _id: id, userId },
-      { $set: { items } },
+      { $set: updateQuery },
       { new: true }
     );
 
@@ -446,6 +497,22 @@ router.put("/grocery/:id", async (req: Request, res: Response, next) => {
     }
 
     return apiResponse(res, 200, true, "Grocery list updated", list);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete("/grocery/:id", async (req: Request, res: Response, next) => {
+  try {
+    const userId = req.user?.user_Id;
+    const { id } = req.params;
+
+    const list = await GroceryListModel.findOneAndDelete({ _id: id, userId });
+    if (!list) {
+      throw new AppError("Grocery list not found", 404);
+    }
+
+    return apiResponse(res, 200, true, "Grocery list deleted", { id });
   } catch (error) {
     next(error);
   }

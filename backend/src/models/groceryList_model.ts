@@ -5,14 +5,16 @@ export interface IGroceryItem {
   name: string;
   quantity: number;
   unit: string;
-  category: string;
+  category?: string;
   purchased: boolean;
 }
 
 export interface IGroceryList {
   userId: string;
-  startDate: string; // YYYY-MM-DD
-  endDate: string; // YYYY-MM-DD
+  title: string;
+  recipeId?: string;
+  startDate?: string; // YYYY-MM-DD
+  endDate?: string; // YYYY-MM-DD
   items: IGroceryItem[];
 }
 
@@ -35,13 +37,20 @@ const groceryListSchema = new Schema<IGroceryListDocument>(
       required: true,
       index: true,
     },
+    title: {
+      type: String,
+      default: "Grocery List",
+    },
+    recipeId: {
+      type: String,
+    },
     startDate: {
       type: String,
-      required: true,
+      default: () => new Date().toISOString().split("T")[0],
     },
     endDate: {
       type: String,
-      required: true,
+      default: () => new Date().toISOString().split("T")[0],
     },
     items: [groceryItemSchema],
   },
