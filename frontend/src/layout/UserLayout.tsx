@@ -8,7 +8,7 @@ export default function Layout({ children }:{children:ReactNode}) {
   const { id } = useParams<{ id: string }>();
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
       {/* Fixed Header */}
       <Headers />
 

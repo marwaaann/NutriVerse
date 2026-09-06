@@ -26,13 +26,32 @@ interface GroceryList {
   items: GroceryItem[];
 }
 
+const UNIT_OPTIONS = [
+  "pcs",
+  "count",
+  "units",
+  "g",
+  "kg",
+  "ml",
+  "l",
+  "pack",
+  "bunch",
+  "can",
+  "bottle",
+  "box",
+  "cup",
+  "tbsp",
+  "tsp",
+  "slice"
+];
+
 export const Grocery: React.FC = () => {
   const [rangeType, setRangeType] = useState<"today" | "3days" | "week">("today");
   const [groceryList, setGroceryList] = useState<GroceryList | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [newItemName, setNewItemName] = useState("");
   const [newItemQty, setNewItemQty] = useState(1);
-  const [newItemUnit, setNewItemUnit] = useState("units");
+  const [newItemUnit, setNewItemUnit] = useState("pcs");
   const [newItemCategory, setNewItemCategory] = useState("Other");
 
   // Calculate dates based on range selection
@@ -124,6 +143,7 @@ export const Grocery: React.FC = () => {
       setGroceryList(response.data.data);
       setNewItemName("");
       setNewItemQty(1);
+      setNewItemUnit("pcs");
       showToast.success(`Added "${newItemName}" to shopping list`);
     } catch (err) {
       console.error(err);
@@ -268,13 +288,17 @@ export const Grocery: React.FC = () => {
               onChange={(e) => setNewItemQty(Number(e.target.value))}
               className="w-20 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-2.5 rounded-xl text-sm outline-none focus:border-amber-500 text-zinc-900 dark:text-white"
             />
-            <input
-              type="text"
-              placeholder="Unit (g, kg)"
+            <select
               value={newItemUnit}
               onChange={(e) => setNewItemUnit(e.target.value)}
-              className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-2.5 rounded-xl text-sm outline-none focus:border-amber-500 text-zinc-900 dark:text-white"
-            />
+              className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-2.5 rounded-xl text-sm outline-none focus:border-amber-500 text-zinc-900 dark:text-white cursor-pointer"
+            >
+              {UNIT_OPTIONS.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
+            </select>
           </div>
           <select
             value={newItemCategory}
@@ -290,7 +314,7 @@ export const Grocery: React.FC = () => {
           </select>
           <button
             onClick={handleAddItem}
-            className="bg-zinc-900 hover:bg-zinc-850 dark:bg-amber-500 dark:hover:bg-amber-600 text-white font-bold py-2.5 px-4 rounded-xl text-sm flex items-center justify-center gap-1.5 transition"
+            className="bg-zinc-900 hover:bg-zinc-800 dark:bg-amber-500 dark:hover:bg-amber-600 text-white font-bold py-2.5 px-4 rounded-xl text-sm flex items-center justify-center gap-1.5 transition"
           >
             <Plus className="h-4 w-4" /> Add Item
           </button>
@@ -305,7 +329,7 @@ export const Grocery: React.FC = () => {
           ))}
         </div>
       ) : !groceryList || groceryList.items.length === 0 ? (
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-850 p-12 rounded-3xl text-center space-y-4">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-12 rounded-3xl text-center space-y-4">
           <span className="text-4xl">🛒</span>
           <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Shopping Catalog Empty</h3>
           <p className="text-xs text-zinc-500 max-w-xs mx-auto">
@@ -345,7 +369,7 @@ export const Grocery: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <span className="text-xs font-bold text-zinc-500 bg-zinc-150/40 dark:bg-zinc-800 px-3 py-1 rounded-full">
+                      <span className="text-xs font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full">
                         {item.quantity} {item.unit}
                       </span>
                       

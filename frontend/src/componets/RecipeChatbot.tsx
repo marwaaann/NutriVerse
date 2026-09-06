@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MessageSquare, Send, Bot, X, HelpCircle, AlertCircle } from "lucide-react";
+import { FormattedAiMessage } from "../utils/formatAiMessage";
 
 interface RecipeChatbotProps {
   recipeId?: string;
@@ -173,7 +174,11 @@ export const RecipeChatbot: React.FC<RecipeChatbotProps> = ({ recipeId }) => {
                       ? "bg-amber-500 text-white rounded-tr-none"
                       : "bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 rounded-tl-none shadow-sm"
                   }`}>
-                    {msg.message}
+                    {msg.role === "assistant" ? (
+                      <FormattedAiMessage content={msg.message} />
+                    ) : (
+                      msg.message
+                    )}
                   </div>
                 </div>
               ))
@@ -183,7 +188,7 @@ export const RecipeChatbot: React.FC<RecipeChatbotProps> = ({ recipeId }) => {
             {chatError && (
               <div className="flex gap-2.5 max-w-[85%] mr-auto">
                 <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 p-3 rounded-2xl rounded-tl-none shadow-sm space-y-2 text-xs">
-                  <div className="flex items-center gap-1 text-red-750 dark:text-red-400 font-bold">
+                  <div className="flex items-center gap-1 text-red-700 dark:text-red-400 font-bold">
                     <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                     Sorry, I couldn't process that request.
                   </div>
@@ -192,7 +197,7 @@ export const RecipeChatbot: React.FC<RecipeChatbotProps> = ({ recipeId }) => {
                       const lastUserMsg = [...messages].reverse().find(m => m.role === "user")?.message;
                       if (lastUserMsg) handleSendMessage(lastUserMsg);
                     }}
-                    className="px-2.5 py-1 bg-red-650 hover:bg-red-750 text-white font-bold rounded text-[10px] transition cursor-pointer"
+                    className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded text-[10px] transition cursor-pointer"
                   >
                     Try Again
                   </button>
@@ -220,7 +225,7 @@ export const RecipeChatbot: React.FC<RecipeChatbotProps> = ({ recipeId }) => {
                   <button
                     key={idx}
                     onClick={() => handleSendMessage(q)}
-                    className="text-[11px] bg-zinc-100 hover:bg-amber-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-650 dark:text-zinc-300 px-2.5 py-1 rounded-full text-left transition-colors cursor-pointer font-semibold border border-zinc-200/50 dark:border-zinc-850"
+                    className="text-[11px] bg-zinc-100 hover:bg-amber-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 px-2.5 py-1 rounded-full text-left transition-colors cursor-pointer font-semibold border border-zinc-200/50 dark:border-zinc-800"
                   >
                     {q}
                   </button>

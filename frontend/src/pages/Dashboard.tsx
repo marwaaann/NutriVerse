@@ -307,7 +307,7 @@ export const Dashboard: React.FC = () => {
                 return (
                   <div 
                     key={mealType} 
-                    className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-850 p-6 rounded-3xl shadow-sm flex flex-col md:flex-row justify-between gap-6 hover:shadow-md transition duration-200"
+                    className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-6 rounded-3xl shadow-sm flex flex-col md:flex-row justify-between gap-6 hover:shadow-md transition duration-200"
                   >
                     <div className="space-y-3 flex-1">
                       <div className="flex items-center gap-2.5">

@@ -11,7 +11,6 @@ export async function signin(data:SigninFormType):Promise<SigninResponse> {
         const response=await axiosInstance.post(API_URLS.SIGN_IN,data);
         return response.data
     } catch (error:unknown) {
-        console.log(error);
         if (axios.isAxiosError(error)) {
       return error.response?.data || {
         success: false,

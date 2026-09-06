@@ -6,17 +6,16 @@ import cookieparser from "cookie-parser";
 import requestLogger from "./logger/requestLogger";
 import { ENV } from "./config/env";
 
-console.log(ENV.FRONTEND_URL)
-
 const app = express();
+const corsOptions = {
+  origin: ENV.FRONTEND_URL,
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
 
-app.use(cors(
-    {
-    origin:ENV.FRONTEND_URL,
-    credentials:true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
-    }
-));
+app.use(cors(corsOptions));
+
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json());
 app.use(cookieparser())

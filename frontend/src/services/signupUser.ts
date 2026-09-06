@@ -9,8 +9,6 @@ export async function signup(data: SignupFormType):Promise<SignupResponse> {
     const response = await axiosInstance.post<SignupResponse>(API_URLS.SIGN_UP, data);
     return response.data;
   } catch (error: unknown) {
-    console.log(error);
-
     if (axios.isAxiosError(error)) {
       return error.response?.data || {
         success: false,

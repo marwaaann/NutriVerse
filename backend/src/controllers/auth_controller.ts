@@ -23,11 +23,11 @@ export class AuthController implements IAuthController{
 
             const result=await this.authService.signup(signupData)
 
-            console.log("Result : ",result)
+            logger.info("Account created successfully", { userId: result.id })
 
             apiResponse<SignupResponseDTO>(res,201,true,"Account created successfully",result)
         } catch (error) {
-            console.log(error)
+            logger.error("Signup failed:", error instanceof Error ? error.message : "Unknown error")
             next(error)
         }
     }
@@ -36,30 +36,31 @@ export class AuthController implements IAuthController{
         try {
             const data:SigninRequestDTO=req.body
 
-            logger.debug("Hitted on authController")
+            logger.debug("Hitted on authController in Signin")
 
             const result=await this.authService.signin(data)
 
-            console.log("result : ",result)
+            logger.info("User authenticated successfully", { userId: result.userId })
+            const crossSiteCookies = ENV.NODE_ENV === "production" || ENV.FRONTEND_URL.startsWith("https://");
 
             res.cookie("accessToken",result.accessToken,{
                 httpOnly:true,
-                secure:ENV.NODE_ENV==="production",
-                sameSite:"strict",
+                secure: crossSiteCookies,
+                sameSite: crossSiteCookies ? "none" : "lax",
                 maxAge: 15 * 60 * 1000, // 15 min
             })
 
             res.cookie("refreshToken",result.refreshToken,{
                 httpOnly:true,
-                secure:ENV.NODE_ENV==="production",
-                sameSite:"strict",
+                secure: crossSiteCookies,
+                sameSite: crossSiteCookies ? "none" : "lax",
                 maxAge:7 * 24 * 60 * 60 * 1000 // 7 days
             })
 
             apiResponse<SigninResponseDTO>(res,200,true,"Login successfully",result)
 
         } catch (error) {
-            console.log(error)
+            logger.error("Signin failed:", error instanceof Error ? error.message : "Unknown error")
             next(error)
         }
     }
@@ -75,23 +76,24 @@ export class AuthController implements IAuthController{
 
             apiResponse<GetMeResponseDTO>(res,200,true,"USER_FETCHED",user)
         } catch (error) {
-            console.log(error)
+            logger.error("GetMe failed:", error instanceof Error ? error.message : "Unknown error")
             next(error)
         }
     }
 
     logout = async(req: Request, res: Response, next: NextFunction):Promise<void>=>{
         try {
+            const crossSiteCookies = ENV.NODE_ENV === "production" || ENV.FRONTEND_URL.startsWith("https://");
             res.clearCookie("accessToken",{
                 httpOnly:true,
-                secure:ENV.NODE_ENV==="production",
-                sameSite:"strict",
+                secure: crossSiteCookies,
+                sameSite: crossSiteCookies ? "none" : "lax",
             })
 
             res.clearCookie("refreshToken",{
                 httpOnly:true,
-                secure:ENV.NODE_ENV==="production",
-                sameSite:"strict",
+                secure: crossSiteCookies,
+                sameSite: crossSiteCookies ? "none" : "lax",
             })
 
             apiResponse(res,200,true,"Logout successfully",null)

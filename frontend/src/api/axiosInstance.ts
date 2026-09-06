@@ -34,10 +34,8 @@ const inValidMessages:string[]=[
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.log("error respose : ",error.response.data)
     if (error.response?.status === 401) {
-      console.log("Unauthorized - maybe token expired");
-      // redirect to login or refresh token
+      // Unauthorized session
     }
     if(inValidMessages.includes(error?.response?.data?.message)){
         // window.location.href = "/auth/signin"

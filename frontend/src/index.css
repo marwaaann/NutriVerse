@@ -10,12 +10,13 @@ Retrieved 2025-11-27, License - CC BY-SA 4.0
 #root {
   min-height: 100vh;
 }
-/* 
-body .dark{
-  background-color: #0F0F1A;
-  color: white;
+
+body {
+  background-color: #f9fafb;
+  color: #18181b;
 }
 
-body .light{
-   background-color: white;
-} */
+html.dark body {
+  background-color: #09090b;
+  color: #f4f4f5;
+}

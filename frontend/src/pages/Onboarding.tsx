@@ -69,6 +69,8 @@ export const Onboarding: React.FC = () => {
   const [cookingTime, setCookingTime] = useState("30 minute meals");
   const [spiceLevel, setSpiceLevel] = useState("Medium");
   const [mealTypes, setMealTypes] = useState<string[]>(["breakfast", "lunch", "dinner", "snack"]);
+  const [cookingRoutine, setCookingRoutine] = useState("Cook fresh each meal");
+  const [cookingExperience, setCookingExperience] = useState("Intermediate");
 
   // Generation status states
   const [isGenerating, setIsGenerating] = useState(false);
@@ -77,14 +79,18 @@ export const Onboarding: React.FC = () => {
   const totalSteps = 7;
 
   const handleNext = () => {
-    if (step === 1 && !fullname.trim()) {
-      showToast.error("Please enter your name");
-      return;
+    if (step === 1) {
+      if (!fullname.trim()) {
+        showToast.error("Please enter your name");
+        return;
+      }
     }
-    setStep(step + 1);
+    setStep(prev => prev + 1);
   };
 
-  const handleBack = () => setStep(step - 1);
+  const handleBack = () => {
+    setStep(prev => Math.max(1, prev - 1));
+  };
 
   const handleAddMember = () => {
     if (!newMemberName.trim()) {
@@ -190,6 +196,15 @@ export const Onboarding: React.FC = () => {
       }
 
       // 3. Save User Preferences
+      let finalCookingTime = cookingTime;
+      if (householdType === "single") {
+        if (cookingRoutine === "Quick & simple (<20 mins)") {
+          finalCookingTime = "Under 20 minutes";
+        } else if (cookingRoutine === "Batch cooking & meal prep") {
+          finalCookingTime = "Meal prep";
+        }
+      }
+
       await userService.savePreferences({
         cuisines: selectedCuisines,
         diet: selectedDiet,
@@ -197,7 +212,7 @@ export const Onboarding: React.FC = () => {
         allergies: selectedAllergies,
         dietaryRestrictions,
         healthGoals,
-        cookingTime,
+        cookingTime: finalCookingTime,
         spiceLevel,
         mealTypes,
       });
@@ -207,9 +222,9 @@ export const Onboarding: React.FC = () => {
       const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
       const dayAfter = new Date(Date.now() + 172800000).toISOString().split("T")[0];
 
-      await axiosInstance.post("/api/mealplanner/plan/generate", { date: today });
-      await axiosInstance.post("/api/mealplanner/plan/generate", { date: tomorrow });
-      await axiosInstance.post("/api/mealplanner/plan/generate", { date: dayAfter });
+      await axiosInstance.post("/api/mealplanner/plan/generate", { date: today, silent: true });
+      await axiosInstance.post("/api/mealplanner/plan/generate", { date: tomorrow, silent: true });
+      await axiosInstance.post("/api/mealplanner/plan/generate", { date: dayAfter, silent: true });
 
       // Invalidate the auth query so that onboardingCompleted: true takes effect
       await queryClient.invalidateQueries({ queryKey: ["me"] });
@@ -236,19 +251,19 @@ export const Onboarding: React.FC = () => {
     ];
 
     return (
-      <div className="min-h-screen bg-amber-50/30 flex flex-col items-center justify-center p-6 text-center">
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-3xl p-8 max-w-md w-full shadow-xl">
+      <div className="min-h-screen bg-amber-50/40 flex flex-col items-center justify-center p-6 text-center">
+        <div className="bg-white border border-amber-100 rounded-3xl p-8 max-w-md w-full shadow-xl shadow-amber-900/5">
           <div className="relative w-24 h-24 mx-auto mb-6 flex items-center justify-center">
             <div className="absolute inset-0 border-4 border-amber-100 rounded-full animate-pulse"></div>
             <div className="absolute inset-0 border-4 border-t-amber-500 rounded-full animate-spin"></div>
             <Sparkles className="h-10 w-10 text-amber-500 animate-bounce" />
           </div>
 
-          <h2 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">
+          <h2 className="text-xl font-bold text-zinc-900 mb-2">
             Personalizing Your NutriVerse
           </h2>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
-            We are configuring custom parameters matching your family preferences.
+          <p className="text-sm text-zinc-500 mb-6">
+            We are configuring custom parameters matching your preferences.
           </p>
 
           <div className="space-y-3 text-left">
@@ -259,13 +274,13 @@ export const Onboarding: React.FC = () => {
                     ? "bg-green-500 text-white" 
                     : generationStep === idx 
                       ? "bg-amber-500 text-white animate-pulse" 
-                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400"
+                      : "bg-zinc-100 text-zinc-400"
                 }`}>
                   {generationStep > idx ? "✓" : idx + 1}
                 </div>
                 <span className={`text-sm ${
                   generationStep === idx 
-                    ? "text-zinc-800 dark:text-white font-semibold" 
+                    ? "text-zinc-900 font-semibold" 
                     : "text-zinc-400"
                 }`}>
                   {stage}
@@ -279,12 +294,12 @@ export const Onboarding: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-amber-50/20 flex flex-col items-center justify-center p-6">
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-8 rounded-3xl max-w-2xl w-full shadow-xl transition-all">
+    <div className="min-h-screen bg-amber-50/40 flex flex-col items-center justify-center p-4 sm:p-6">
+      <div className="bg-white border border-amber-100/80 p-6 sm:p-8 rounded-3xl max-w-2xl w-full shadow-xl shadow-amber-900/5 transition-all">
         
         {/* Progress header */}
         <div className="mb-8">
-          <div className="flex justify-between text-xs text-amber-700 font-semibold mb-2 uppercase tracking-wider">
+          <div className="flex justify-between text-xs text-amber-800 font-semibold mb-2 uppercase tracking-wider">
             <span>Onboarding Progress</span>
             <span>Step {step} of {totalSteps}</span>
           </div>
@@ -301,31 +316,31 @@ export const Onboarding: React.FC = () => {
           <div className="space-y-6">
             <div className="text-center">
               <span className="text-3xl">👋</span>
-              <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mt-2">Welcome to NutriVerse!</h2>
-              <p className="text-sm text-zinc-500 mt-1">Let's build a customized diet roadmap matching your household goals.</p>
+              <h2 className="text-2xl font-bold text-zinc-900 mt-2">Welcome to NutriVerse!</h2>
+              <p className="text-sm text-zinc-500 mt-1">Let's build a customized diet roadmap matching your goals.</p>
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">What should we call you?</label>
+              <label className="text-sm font-semibold text-zinc-700">What should we call you?</label>
               <input 
                 type="text" 
                 value={fullname}
                 onChange={(e) => setFullname(e.target.value)}
-                className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-3 rounded-xl outline-none focus:border-amber-500 transition text-zinc-900 dark:text-white"
+                className="w-full bg-zinc-50 border border-zinc-200 px-4 py-3 rounded-xl outline-none focus:border-amber-500 focus:bg-white transition text-zinc-900"
                 placeholder="Enter your name"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Who usually eats with you?</label>
+              <label className="text-sm font-semibold text-zinc-700">Who usually eats with you?</label>
               <div className="grid grid-cols-2 gap-4">
                 <button
                   type="button"
                   onClick={() => setHouseholdType("single")}
-                  className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition ${
+                  className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition cursor-pointer ${
                     householdType === "single"
-                      ? "border-amber-500 bg-amber-50/20 text-amber-700 dark:text-amber-400 font-semibold"
-                      : "border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+                      ? "border-amber-500 bg-amber-50/50 text-amber-900 font-semibold ring-1 ring-amber-500"
+                      : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
                   }`}
                 >
                   <Users className="h-6 w-6" /> Just Me
@@ -333,10 +348,10 @@ export const Onboarding: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setHouseholdType("household")}
-                  className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition ${
+                  className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition cursor-pointer ${
                     householdType === "household"
-                      ? "border-amber-500 bg-amber-50/20 text-amber-700 dark:text-amber-400 font-semibold"
-                      : "border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+                      ? "border-amber-500 bg-amber-50/50 text-amber-900 font-semibold ring-1 ring-amber-500"
+                      : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
                   }`}
                 >
                   <UserPlus className="h-6 w-6" /> Family / Household
@@ -346,92 +361,154 @@ export const Onboarding: React.FC = () => {
           </div>
         )}
 
-        {/* Step 2: Household setups */}
-        {step === 2 && householdType === "household" && (
+        {/* Step 2: Single Routine & Experience OR Household Setup */}
+        {step === 2 && (
           <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Household Setup</h2>
-              <p className="text-sm text-zinc-500">Configure members who will share meals with you.</p>
-            </div>
-
-            {/* Quick add sub-form */}
-            <div className="bg-amber-50/10 dark:bg-zinc-800/40 p-5 rounded-2xl border border-amber-100/50 dark:border-zinc-800 space-y-4">
-              <h4 className="text-xs font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">Add Household Member</h4>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  placeholder="Member Name"
-                  value={newMemberName}
-                  onChange={(e) => setNewMemberName(e.target.value)}
-                  className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 px-3 py-2 rounded-xl text-sm outline-none text-zinc-900 dark:text-white"
-                />
-                <select
-                  value={newMemberAge}
-                  onChange={(e) => setNewMemberAge(e.target.value)}
-                  className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 px-3 py-2 rounded-xl text-sm outline-none text-zinc-900 dark:text-white"
-                >
-                  <option value="Adult">Adult</option>
-                  <option value="Child">Child</option>
-                  <option value="Toddler">Toddler</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <select
-                  value={newMemberRelation}
-                  onChange={(e) => setNewMemberRelation(e.target.value)}
-                  className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 px-3 py-2 rounded-xl text-sm outline-none text-zinc-900 dark:text-white"
-                >
-                  <option value="Partner">Partner</option>
-                  <option value="Child">Child</option>
-                  <option value="Parent">Parent</option>
-                  <option value="Roommate">Roommate</option>
-                </select>
-
-                <select
-                  value={newMemberDiet}
-                  onChange={(e) => setNewMemberDiet(e.target.value)}
-                  className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 px-3 py-2 rounded-xl text-sm outline-none text-zinc-900 dark:text-white"
-                >
-                  <option value="Vegetarian">Vegetarian</option>
-                  <option value="Non-vegetarian">Non-vegetarian</option>
-                  <option value="Vegan">Vegan</option>
-                  <option value="Eggitarian">Eggitarian</option>
-                </select>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleAddMember}
-                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 rounded-xl text-sm shadow-sm transition"
-              >
-                Add Member
-              </button>
-            </div>
-
-            {/* List of members added */}
-            {members.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Household List</h4>
-                <div className="divide-y divide-zinc-100 dark:divide-zinc-800 border border-zinc-100 dark:border-zinc-800 rounded-2xl overflow-hidden bg-white dark:bg-zinc-900">
-                  {members.map((m, idx) => (
-                    <div key={idx} className="flex justify-between items-center p-4 hover:bg-zinc-50/50 transition">
-                      <div>
-                        <p className="font-semibold text-zinc-900 dark:text-white">{m.name}</p>
-                        <p className="text-xs text-zinc-500">{m.relationship} • {m.ageGroup} • {m.dietaryPreference}</p>
-                      </div>
-                      <button 
-                        type="button" 
-                        onClick={() => handleRemoveMember(idx)}
-                        className="text-red-500 hover:bg-red-50 p-2 rounded-xl transition"
-                      >
-                        <Trash2 className="h-4.5 w-4.5" />
-                      </button>
-                    </div>
-                  ))}
+            {householdType === "single" ? (
+              <>
+                <div>
+                  <h2 className="text-2xl font-bold text-zinc-900">Cooking Routine & Experience</h2>
+                  <p className="text-sm text-zinc-500">Help us personalize recipes and prep speeds to your lifestyle.</p>
                 </div>
-              </div>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-semibold text-zinc-700">How do you prefer to plan and prepare meals?</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { title: "Cook fresh each meal", desc: "Fresh hot meals prepared daily" },
+                      { title: "Batch cooking & meal prep", desc: "Cook ahead and save time during the week" },
+                      { title: "Quick & simple (<20 mins)", desc: "Fast weeknight convenience meals" },
+                      { title: "Flexible mix", desc: "Balanced mix of home cooking & dining out" },
+                    ].map((item) => (
+                      <button
+                        key={item.title}
+                        type="button"
+                        onClick={() => setCookingRoutine(item.title)}
+                        className={`p-4 rounded-2xl border text-left transition cursor-pointer ${
+                          cookingRoutine === item.title
+                            ? "border-amber-500 bg-amber-50/50 text-amber-900 font-semibold ring-1 ring-amber-500"
+                            : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300"
+                        }`}
+                      >
+                        <div className="font-semibold text-sm">{item.title}</div>
+                        <div className="text-xs text-zinc-500 mt-1">{item.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-semibold text-zinc-700">What's your cooking experience level?</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { level: "Beginner", desc: "Simple, easy recipes" },
+                      { level: "Intermediate", desc: "Everyday home cook" },
+                      { level: "Advanced", desc: "Culinary explorer" },
+                    ].map((item) => (
+                      <button
+                        key={item.level}
+                        type="button"
+                        onClick={() => setCookingExperience(item.level)}
+                        className={`p-3.5 rounded-2xl border text-center transition cursor-pointer ${
+                          cookingExperience === item.level
+                            ? "border-amber-500 bg-amber-50/50 text-amber-900 font-semibold ring-1 ring-amber-500"
+                            : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300"
+                        }`}
+                      >
+                        <div className="font-semibold text-sm">{item.level}</div>
+                        <div className="text-xs text-zinc-500 mt-0.5">{item.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <h2 className="text-2xl font-bold text-zinc-900">Household Setup</h2>
+                  <p className="text-sm text-zinc-500">Configure members who will share meals with you.</p>
+                </div>
+
+                {/* Quick add sub-form */}
+                <div className="bg-amber-50/40 p-5 rounded-2xl border border-amber-100 space-y-4">
+                  <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider">Add Household Member</h4>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      placeholder="Member Name"
+                      value={newMemberName}
+                      onChange={(e) => setNewMemberName(e.target.value)}
+                      className="bg-white border border-zinc-200 px-3 py-2 rounded-xl text-sm outline-none text-zinc-900 focus:border-amber-500"
+                    />
+                    <select
+                      value={newMemberAge}
+                      onChange={(e) => setNewMemberAge(e.target.value)}
+                      className="bg-white border border-zinc-200 px-3 py-2 rounded-xl text-sm outline-none text-zinc-900 focus:border-amber-500"
+                    >
+                      <option value="Adult">Adult</option>
+                      <option value="Child">Child</option>
+                      <option value="Toddler">Toddler</option>
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <select
+                      value={newMemberRelation}
+                      onChange={(e) => setNewMemberRelation(e.target.value)}
+                      className="bg-white border border-zinc-200 px-3 py-2 rounded-xl text-sm outline-none text-zinc-900 focus:border-amber-500"
+                    >
+                      <option value="Partner">Partner</option>
+                      <option value="Child">Child</option>
+                      <option value="Parent">Parent</option>
+                      <option value="Roommate">Roommate</option>
+                    </select>
+
+                    <select
+                      value={newMemberDiet}
+                      onChange={(e) => setNewMemberDiet(e.target.value)}
+                      className="bg-white border border-zinc-200 px-3 py-2 rounded-xl text-sm outline-none text-zinc-900 focus:border-amber-500"
+                    >
+                      <option value="Vegetarian">Vegetarian</option>
+                      <option value="Non-vegetarian">Non-vegetarian</option>
+                      <option value="Vegan">Vegan</option>
+                      <option value="Eggitarian">Eggitarian</option>
+                    </select>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleAddMember}
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 rounded-xl text-sm shadow-sm transition cursor-pointer"
+                  >
+                    Add Member
+                  </button>
+                </div>
+
+                {/* List of members added */}
+                {members.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Household List</h4>
+                    <div className="divide-y divide-zinc-100 border border-zinc-100 rounded-2xl overflow-hidden bg-white">
+                      {members.map((m, idx) => (
+                        <div key={idx} className="flex justify-between items-center p-4 hover:bg-zinc-50/50 transition">
+                          <div>
+                            <p className="font-semibold text-zinc-900">{m.name}</p>
+                            <p className="text-xs text-zinc-500">{m.relationship} • {m.ageGroup} • {m.dietaryPreference}</p>
+                          </div>
+                          <button 
+                            type="button" 
+                            onClick={() => handleRemoveMember(idx)}
+                            className="text-red-500 hover:bg-red-50 p-2 rounded-xl transition cursor-pointer"
+                          >
+                            <Trash2 className="h-4.5 w-4.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
@@ -440,22 +517,22 @@ export const Onboarding: React.FC = () => {
         {step === 3 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Diet & Cuisines</h2>
+              <h2 className="text-2xl font-bold text-zinc-900">Diet & Cuisines</h2>
               <p className="text-sm text-zinc-500">Specify your food preferences.</p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Diet Type</label>
+              <label className="text-sm font-semibold text-zinc-700">Diet Type</label>
               <div className="grid grid-cols-3 gap-3">
                 {["Vegetarian", "Non-vegetarian", "Vegan", "Eggitarian", "Jain"].map(diet => (
                   <button
                     key={diet}
                     type="button"
                     onClick={() => setSelectedDiet(diet)}
-                    className={`p-3 rounded-xl border text-sm transition font-semibold ${
+                    className={`p-3 rounded-xl border text-sm transition font-semibold cursor-pointer ${
                       selectedDiet === diet
-                        ? "border-amber-500 bg-amber-50/20 text-amber-700 dark:text-amber-400"
-                        : "border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+                        ? "border-amber-500 bg-amber-50/50 text-amber-900 ring-1 ring-amber-500"
+                        : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
                     }`}
                   >
                     {diet}
@@ -466,17 +543,17 @@ export const Onboarding: React.FC = () => {
 
             {selectedDiet === "Non-vegetarian" && (
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Preferred Proteins</label>
+                <label className="text-sm font-semibold text-zinc-700">Preferred Proteins</label>
                 <div className="flex flex-wrap gap-2">
                   {["Chicken", "Mutton", "Fish", "Eggs", "Seafood"].map(item => (
                     <button
                       key={item}
                       type="button"
                       onClick={() => toggleNonVeg(item)}
-                      className={`px-4 py-2 rounded-full border text-xs transition font-semibold ${
+                      className={`px-4 py-2 rounded-full border text-xs transition font-semibold cursor-pointer ${
                         selectedNonVeg.includes(item)
                           ? "border-amber-500 bg-amber-500 text-white"
-                          : "border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+                          : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
                       }`}
                     >
                       {item}
@@ -487,17 +564,17 @@ export const Onboarding: React.FC = () => {
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Favorite Cuisines</label>
+              <label className="text-sm font-semibold text-zinc-700">Favorite Cuisines</label>
               <div className="grid grid-cols-3 gap-2">
                 {CUISINE_OPTIONS.map(cuisine => (
                   <button
                     key={cuisine}
                     type="button"
                     onClick={() => toggleCuisine(cuisine)}
-                    className={`p-3 rounded-xl border text-xs transition font-semibold ${
+                    className={`p-3 rounded-xl border text-xs transition font-semibold cursor-pointer ${
                       selectedCuisines.includes(cuisine)
-                        ? "border-amber-500 bg-amber-550/20 text-amber-700 dark:text-amber-400 border-2"
-                        : "border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+                        ? "border-amber-500 bg-amber-50/50 text-amber-900 border-2 ring-1 ring-amber-500"
+                        : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
                     }`}
                   >
                     {cuisine}
@@ -512,7 +589,7 @@ export const Onboarding: React.FC = () => {
         {step === 4 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+              <h2 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
                 <ShieldAlert className="h-6 w-6 text-amber-600 animate-pulse" /> Safety Allergies
               </h2>
               <p className="text-sm text-zinc-500">Excluded ingredients will never be suggested in meal plans or grocery lists.</p>
@@ -524,10 +601,10 @@ export const Onboarding: React.FC = () => {
                   key={allergy}
                   type="button"
                   onClick={() => toggleAllergy(allergy)}
-                  className={`p-3 rounded-xl border text-xs transition font-semibold flex items-center justify-between ${
+                  className={`p-3 rounded-xl border text-xs transition font-semibold flex items-center justify-between cursor-pointer ${
                     selectedAllergies.includes(allergy)
-                      ? "border-red-500 bg-red-50/25 text-red-700 dark:text-red-400"
-                      : "border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+                      ? "border-red-500 bg-red-50/50 text-red-700"
+                      : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
                   }`}
                 >
                   <span>{allergy}</span>
@@ -538,19 +615,19 @@ export const Onboarding: React.FC = () => {
 
             {/* Custom Allergy text field */}
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Custom Allergy</label>
+              <label className="text-sm font-semibold text-zinc-700">Custom Allergy</label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   placeholder="e.g. Garlic, Coriander"
                   value={customAllergy}
                   onChange={(e) => setCustomAllergy(e.target.value)}
-                  className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-2.5 rounded-xl outline-none focus:border-amber-500 text-zinc-900 dark:text-white text-sm"
+                  className="flex-1 bg-zinc-50 border border-zinc-200 px-4 py-2.5 rounded-xl outline-none focus:border-amber-500 focus:bg-white text-zinc-900 text-sm"
                 />
                 <button
                   type="button"
                   onClick={handleAddCustomAllergy}
-                  className="px-4 bg-zinc-800 hover:bg-zinc-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white rounded-xl text-sm font-semibold transition"
+                  className="px-4 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-sm font-semibold transition cursor-pointer"
                 >
                   Add
                 </button>
@@ -563,7 +640,7 @@ export const Onboarding: React.FC = () => {
         {step === 5 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+              <h2 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
                 <Heart className="h-6 w-6 text-amber-500" /> Health & Diet Goals
               </h2>
               <p className="text-sm text-zinc-500">Optional filters to guide meal macro ratios (Skip if you want).</p>
@@ -579,10 +656,10 @@ export const Onboarding: React.FC = () => {
                   key={goal}
                   type="button"
                   onClick={() => toggleGoal(goal)}
-                  className={`p-4 rounded-xl border text-sm transition font-semibold text-left flex justify-between items-center ${
+                  className={`p-4 rounded-xl border text-sm transition font-semibold text-left flex justify-between items-center cursor-pointer ${
                     healthGoals.includes(goal)
-                      ? "border-amber-500 bg-amber-50/20 text-amber-700 dark:text-amber-400"
-                      : "border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-400"
+                      ? "border-amber-500 bg-amber-50/50 text-amber-900 ring-1 ring-amber-500"
+                      : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300"
                   }`}
                 >
                   <span>{goal}</span>
@@ -597,22 +674,22 @@ export const Onboarding: React.FC = () => {
         {step === 6 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Cooking Preferences</h2>
+              <h2 className="text-2xl font-bold text-zinc-900">Cooking Preferences</h2>
               <p className="text-sm text-zinc-500">Configure cooking speeds and daily frequencies.</p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Average prep speed</label>
+              <label className="text-sm font-semibold text-zinc-700">Average prep speed</label>
               <div className="grid grid-cols-3 gap-2">
                 {["Under 20 minutes", "30 minute meals", "Weekend cooking", "Meal prep"].map(time => (
                   <button
                     key={time}
                     type="button"
                     onClick={() => setCookingTime(time)}
-                    className={`p-3 rounded-xl border text-xs transition font-semibold ${
+                    className={`p-3 rounded-xl border text-xs transition font-semibold cursor-pointer ${
                       cookingTime === time
-                        ? "border-amber-500 bg-amber-50/20 text-amber-700 dark:text-amber-400"
-                        : "border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+                        ? "border-amber-500 bg-amber-50/50 text-amber-900 ring-1 ring-amber-500"
+                        : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
                     }`}
                   >
                     {time}
@@ -622,17 +699,17 @@ export const Onboarding: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Spice Preference</label>
+              <label className="text-sm font-semibold text-zinc-700">Spice Preference</label>
               <div className="grid grid-cols-3 gap-2">
                 {["Mild", "Medium", "Spicy"].map(spice => (
                   <button
                     key={spice}
                     type="button"
                     onClick={() => setSpiceLevel(spice)}
-                    className={`p-3 rounded-xl border text-sm transition font-semibold ${
+                    className={`p-3 rounded-xl border text-sm transition font-semibold cursor-pointer ${
                       spiceLevel === spice
-                        ? "border-amber-500 bg-amber-50/20 text-amber-700 dark:text-amber-400"
-                        : "border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+                        ? "border-amber-500 bg-amber-50/50 text-amber-900 ring-1 ring-amber-500"
+                        : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
                     }`}
                   >
                     {spice}
@@ -642,7 +719,7 @@ export const Onboarding: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Frequencies</label>
+              <label className="text-sm font-semibold text-zinc-700">Frequencies</label>
               <div className="flex flex-wrap gap-2">
                 {["breakfast", "lunch", "snack", "dinner"].map(meal => (
                   <button
@@ -655,10 +732,10 @@ export const Onboarding: React.FC = () => {
                         setMealTypes([...mealTypes, meal]);
                       }
                     }}
-                    className={`px-4 py-2 rounded-full border text-xs uppercase tracking-wider transition font-semibold ${
+                    className={`px-4 py-2 rounded-full border text-xs uppercase tracking-wider transition font-semibold cursor-pointer ${
                       mealTypes.includes(meal)
                         ? "border-amber-500 bg-amber-500 text-white"
-                        : "border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+                        : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
                     }`}
                   >
                     {meal}
@@ -674,7 +751,7 @@ export const Onboarding: React.FC = () => {
           <div className="space-y-6 text-center py-6">
             <span className="text-5xl">🎉</span>
             <div>
-              <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mt-4">You're all set, {fullname}!</h2>
+              <h2 className="text-2xl font-bold text-zinc-900 mt-4">You're all set, {fullname}!</h2>
               <p className="text-sm text-zinc-500 mt-2">
                 NutriVerse AI is ready to generate your first personalized daily meal targets and shopping catalog.
               </p>
@@ -690,12 +767,12 @@ export const Onboarding: React.FC = () => {
         )}
 
         {/* Navigation Actions */}
-        {step < totalSteps && (
-          <div className="flex justify-between items-center mt-8 pt-6 border-t border-zinc-100 dark:border-zinc-800">
+        {step < 7 && (
+          <div className="flex justify-between items-center mt-8 pt-6 border-t border-zinc-100">
             {step > 1 ? (
               <button
                 onClick={handleBack}
-                className="flex items-center gap-1.5 px-4 py-2.5 text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800 rounded-xl text-sm font-semibold transition"
+                className="flex items-center gap-1.5 px-4 py-2.5 text-zinc-600 hover:bg-zinc-100 rounded-xl text-sm font-semibold transition cursor-pointer"
               >
                 <ArrowLeft className="h-4.5 w-4.5" /> Back
               </button>
@@ -705,7 +782,7 @@ export const Onboarding: React.FC = () => {
 
             <button
               onClick={handleNext}
-              className="flex items-center gap-1.5 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold shadow-sm transition"
+              className="flex items-center gap-1.5 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold shadow-sm transition cursor-pointer"
             >
               Continue <ArrowRight className="h-4.5 w-4.5" />
             </button>

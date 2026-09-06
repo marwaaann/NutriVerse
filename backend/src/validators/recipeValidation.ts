@@ -15,6 +15,7 @@ export const createRecipeSchema = z.object({
   servings: z.number().int().positive("Servings must be at least 1"),
   category: z.string().optional().default(""),
   image: z.string().optional().default(""),
+  imagePublicId: z.string().optional(),
 });
 
 export const updateRecipeSchema = z.object({
@@ -26,6 +27,7 @@ export const updateRecipeSchema = z.object({
   servings: z.number().int().positive("Servings must be at least 1").optional(),
   category: z.string().optional(),
   image: z.string().optional(),
+  imagePublicId: z.string().optional(),
 });
 
 export type CreateRecipeInput = z.infer<typeof createRecipeSchema>;

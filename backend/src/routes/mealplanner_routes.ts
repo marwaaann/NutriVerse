@@ -44,6 +44,9 @@ router.get("/preferences", async (req: Request, res: Response, next) => {
 router.put("/preferences", async (req: Request, res: Response, next) => {
   try {
     const userId = req.user?.user_Id;
+    if (!userId) {
+      throw new AppError("Unauthorized", 401);
+    }
     const {
       cuisines,
       diet,
@@ -76,6 +79,22 @@ router.put("/preferences", async (req: Request, res: Response, next) => {
 
     // Update the user document to mark onboarding as completed
     await UserModel.findByIdAndUpdate(userId, { onboardingCompleted: true });
+
+    // Add a single useful welcome notification upon onboarding completion
+    try {
+      const existing = await notificationService.getUserNotifications(userId);
+      const hasWelcome = existing.some((n) => n.title.includes("Welcome"));
+      if (!hasWelcome) {
+        await notificationService.createNotification(
+          userId,
+          "system",
+          "Welcome to NutriVerse! 👋",
+          "Your personalized meal plans and nutrition targets are ready to explore."
+        );
+      }
+    } catch {
+      // Non-blocking
+    }
 
     return apiResponse(res, 200, true, "Preferences updated successfully", preferences);
   } catch (error) {
@@ -167,7 +186,7 @@ router.post("/plan/generate", async (req: Request, res: Response, next) => {
     if (!userId) {
       throw new AppError("UNAUTHORIZED", 401);
     }
-    const { date } = req.body;
+    const { date, silent } = req.body;
 
     if (!date) {
       throw new AppError("Date is required YYYY-MM-DD", 400);
@@ -206,14 +225,16 @@ router.post("/plan/generate", async (req: Request, res: Response, next) => {
       { new: true, upsert: true }
     );
 
-    await notificationService.createNotification(
-      userId,
-      "Meal Plan Ready",
-      "Meal Plan Ready",
-      "Your personalized meal plan is ready to review.",
-      undefined,
-      savedPlan._id?.toString()
-    );
+    if (!silent) {
+      await notificationService.createNotification(
+        userId,
+        "Meal Plan Ready",
+        "Meal Plan Ready",
+        "Your personalized meal plan is ready to review.",
+        undefined,
+        savedPlan._id?.toString()
+      );
+    }
 
     return apiResponse(res, 200, true, "Meal plan generated successfully", savedPlan);
   } catch (error) {

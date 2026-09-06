@@ -182,8 +182,8 @@ export default function Headers() {
                                   <span className="h-1.5 w-1.5 bg-amber-500 rounded-full shrink-0 animate-ping" />
                                 )}
                               </div>
-                              <p className="text-zinc-450 dark:text-zinc-500 mt-0.5 text-[11px] leading-snug">{n.message}</p>
-                              <span className="text-[10px] text-zinc-400 dark:text-zinc-650 mt-1 block">
+                              <p className="text-zinc-500 dark:text-zinc-400 mt-0.5 text-[11px] leading-snug">{n.message}</p>
+                              <span className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1 block">
                                 {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </div>

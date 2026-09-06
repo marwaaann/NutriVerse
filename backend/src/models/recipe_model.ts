@@ -37,6 +37,7 @@ interface IRecipeDocument extends Document {
   servings: number;
   category?: string;
   image?: string;
+  imagePublicId?: string;
   authorId: string;
   nutrition?: INutritionSchema;
   caloriesPerServing?: number;
@@ -114,6 +115,9 @@ const recipeSchema = new Schema<IRecipeDocument>(
       trim: true,
     },
     image: {
+      type: String,
+    },
+    imagePublicId: {
       type: String,
     },
     authorId: {

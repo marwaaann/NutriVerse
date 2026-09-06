@@ -105,15 +105,15 @@ export const RecipesList: React.FC = () => {
                   <div className="grid grid-cols-3 gap-2 py-2.5 border-t border-zinc-100 dark:border-zinc-800 text-center text-xs mb-4">
                     <div>
                       <div className="font-bold text-zinc-900 dark:text-white">{recipe.nutrition.calories}</div>
-                      <div className="text-[10px] text-zinc-450">Calories</div>
+                      <div className="text-[10px] text-zinc-500 dark:text-zinc-400">Calories</div>
                     </div>
                     <div>
                       <div className="font-bold text-zinc-900 dark:text-white">{recipe.nutrition.protein}g</div>
-                      <div className="text-[10px] text-zinc-450">Protein</div>
+                      <div className="text-[10px] text-zinc-500 dark:text-zinc-400">Protein</div>
                     </div>
                     <div>
                       <div className="font-bold text-zinc-900 dark:text-white">{recipe.nutrition.fat}g</div>
-                      <div className="text-[10px] text-zinc-450">Fat</div>
+                      <div className="text-[10px] text-zinc-500 dark:text-zinc-400">Fat</div>
                     </div>
                   </div>
                 )}

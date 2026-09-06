@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { recipeService } from "../services/recipeService";
 import { Link } from "react-router-dom";
+import { FormattedAiMessage } from "../utils/formatAiMessage";
+import { showToast } from "../utils/toast";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -317,13 +319,18 @@ export const ChatOverview: React.FC = () => {
   // Save to Database Handler
   const handleSaveRecipe = async (index: number) => {
     const recipeData = messages[index].generatedRecipe;
-    if (!recipeData) return;
+    if (!recipeData || savingIndex !== null) return;
 
     try {
       setSavingIndex(index);
       setSaveErrorIndex(null);
       setSaveErrorMessage(null);
       
+      const totalCookingTime = Math.max(
+        1,
+        Math.round(Number((recipeData.prepTime || 0) + (recipeData.cookTime || 0)) || 30)
+      );
+
       const payload = {
         title: recipeData.title,
         description: recipeData.description || "",
@@ -333,10 +340,11 @@ export const ChatOverview: React.FC = () => {
           unit: ing.unit || "g"
         })),
         preparationSteps: recipeData.instructions,
-        cookingTime: Number((recipeData.prepTime || 0) + (recipeData.cookTime || 0)) || 30,
+        cookingTime: totalCookingTime,
         servings: Number(recipeData.servings) || 2,
         category: recipeData.category || "Dinner",
-        image: recipeData.image || ""
+        image: recipeData.image || "",
+        imagePublicId: recipeData.imagePublicId || undefined
       };
 
       const newRecipe = await recipeService.createRecipe(payload);
@@ -346,14 +354,18 @@ export const ChatOverview: React.FC = () => {
         next[index].savedRecipeId = newRecipe._id;
         return next;
       });
+      showToast.success("Recipe added to your collection!");
     } catch (err: any) {
       console.error("Failed to save generated recipe:", err);
       setSaveErrorIndex(index);
-      if (err.response?.status === 401 || err.response?.data?.message === "NOT_AUTHENTICATED" || err.response?.data?.message === "UNAUTHORIZED") {
-        setSaveErrorMessage("Your session has expired. Please log in again.");
-      } else {
-        setSaveErrorMessage(err.response?.data?.message || err.message || "Failed to save recipe. Please try again.");
-      }
+      const errMsg =
+        err.response?.status === 401 ||
+        err.response?.data?.message === "NOT_AUTHENTICATED" ||
+        err.response?.data?.message === "UNAUTHORIZED"
+          ? "Your session has expired. Please log in again."
+          : err.response?.data?.message || err.message || "Failed to save recipe. Please try again.";
+      setSaveErrorMessage(errMsg);
+      showToast.error(errMsg);
     } finally {
       setSavingIndex(null);
     }
@@ -366,7 +378,7 @@ export const ChatOverview: React.FC = () => {
       <div className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm flex flex-col h-full">
         
         {/* Header bar */}
-        <div className="p-4 border-b border-zinc-150 dark:border-zinc-800 flex justify-between items-center shrink-0">
+        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-3">
             <div className="bg-amber-500 text-white p-2 rounded-xl">
               <Bot className="h-5 w-5" />
@@ -376,7 +388,7 @@ export const ChatOverview: React.FC = () => {
               <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">Tell me what you want to eat, and I'll create it.</p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-800 px-3 py-1 rounded-full border border-zinc-100 dark:border-zinc-750">
+          <div className="flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-800 px-3 py-1 rounded-full border border-zinc-100 dark:border-zinc-700">
             <span className={`h-2 w-2 rounded-full ${
               status === "connected" ? "bg-green-500 animate-pulse" : status === "connecting" ? "bg-amber-500 animate-bounce" : "bg-red-500"
             }`} />
@@ -401,15 +413,19 @@ export const ChatOverview: React.FC = () => {
                   <div className={`p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${
                     msg.role === "user"
                       ? "bg-amber-500 text-white rounded-tr-none"
-                      : "bg-white dark:bg-zinc-900 text-zinc-850 dark:text-zinc-150 border border-zinc-150 dark:border-zinc-800 rounded-tl-none"
+                      : "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-800 rounded-tl-none"
                   }`}>
-                    {msg.message}
+                    {msg.role === "assistant" ? (
+                      <FormattedAiMessage content={msg.message} />
+                    ) : (
+                      msg.message
+                    )}
                   </div>
                 </div>
 
                 {/* Recipe Preview Card Rendering */}
                 {msg.role === "assistant" && msg.isRecipeGeneration && msg.generatedRecipe && (
-                  <div className="w-[90%] md:w-[80%] mr-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 rounded-2xl shadow-md overflow-hidden p-6 space-y-4 ml-6">
+                  <div className="w-[90%] md:w-[80%] mr-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-md overflow-hidden p-6 space-y-4 ml-6">
                     
                     {editingIndex === index ? (
                       /* EDIT MODE FORM */
@@ -422,7 +438,7 @@ export const ChatOverview: React.FC = () => {
                             type="text" 
                             value={editFormData.title}
                             onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                            className="w-full bg-zinc-55 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-sm text-zinc-800 dark:text-white"
+                            className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-sm text-zinc-800 dark:text-white"
                           />
                         </div>
 
@@ -431,7 +447,7 @@ export const ChatOverview: React.FC = () => {
                           <textarea 
                             value={editFormData.description}
                             onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
-                            className="w-full bg-zinc-55 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-sm text-zinc-800 dark:text-white h-20"
+                            className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-sm text-zinc-800 dark:text-white h-20"
                           />
                         </div>
 
@@ -442,7 +458,7 @@ export const ChatOverview: React.FC = () => {
                               type="number" 
                               value={editFormData.servings}
                               onChange={(e) => setEditFormData({ ...editFormData, servings: Number(e.target.value) || 1 })}
-                              className="w-full bg-zinc-55 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-sm text-zinc-800 dark:text-white"
+                              className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-sm text-zinc-800 dark:text-white"
                             />
                           </div>
                           <div>
@@ -451,7 +467,7 @@ export const ChatOverview: React.FC = () => {
                               type="number" 
                               value={editFormData.prepTime}
                               onChange={(e) => setEditFormData({ ...editFormData, prepTime: Number(e.target.value) || 0 })}
-                              className="w-full bg-zinc-55 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-sm text-zinc-800 dark:text-white"
+                              className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-sm text-zinc-800 dark:text-white"
                             />
                           </div>
                           <div>
@@ -460,7 +476,7 @@ export const ChatOverview: React.FC = () => {
                               type="number" 
                               value={editFormData.cookTime}
                               onChange={(e) => setEditFormData({ ...editFormData, cookTime: Number(e.target.value) || 0 })}
-                              className="w-full bg-zinc-55 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-sm text-zinc-800 dark:text-white"
+                              className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-sm text-zinc-800 dark:text-white"
                             />
                           </div>
                         </div>
@@ -472,7 +488,7 @@ export const ChatOverview: React.FC = () => {
                               type="text" 
                               value={editFormData.category}
                               onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
-                              className="w-full bg-zinc-55 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-sm text-zinc-800 dark:text-white"
+                              className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-sm text-zinc-800 dark:text-white"
                             />
                           </div>
                           <div>
@@ -481,7 +497,7 @@ export const ChatOverview: React.FC = () => {
                               type="text" 
                               value={editFormData.cuisine}
                               onChange={(e) => setEditFormData({ ...editFormData, cuisine: e.target.value })}
-                              className="w-full bg-zinc-55 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-sm text-zinc-800 dark:text-white"
+                              className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-sm text-zinc-800 dark:text-white"
                             />
                           </div>
                         </div>
@@ -497,22 +513,33 @@ export const ChatOverview: React.FC = () => {
                                   placeholder="Name"
                                   value={ing.name}
                                   onChange={(e) => handleEditIngredientChange(i, "name", e.target.value)}
-                                  className="flex-1 bg-zinc-55 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-xs text-zinc-800 dark:text-white"
+                                  className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-xs text-zinc-800 dark:text-white"
                                 />
                                 <input 
                                   type="number" 
                                   placeholder="Qty"
                                   value={ing.quantity}
                                   onChange={(e) => handleEditIngredientChange(i, "quantity", e.target.value)}
-                                  className="w-20 bg-zinc-55 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-xs text-zinc-800 dark:text-white"
+                                  className="w-20 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-xs text-zinc-800 dark:text-white"
                                 />
-                                <input 
-                                  type="text" 
-                                  placeholder="Unit"
+                                <select 
                                   value={ing.unit}
                                   onChange={(e) => handleEditIngredientChange(i, "unit", e.target.value)}
-                                  className="w-20 bg-zinc-55 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-xs text-zinc-800 dark:text-white"
-                                />
+                                  className="w-20 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-xs text-zinc-800 dark:text-white cursor-pointer"
+                                >
+                                  <option value="piece">piece</option>
+                                  <option value="g">g</option>
+                                  <option value="kg">kg</option>
+                                  <option value="ml">ml</option>
+                                  <option value="l">l</option>
+                                  <option value="cup">cup</option>
+                                  <option value="tbsp">tbsp</option>
+                                  <option value="tsp">tsp</option>
+                                  <option value="whole">whole</option>
+                                  <option value="clove">clove</option>
+                                  <option value="slice">slice</option>
+                                  <option value="pack">pack</option>
+                                </select>
                                 <button 
                                   onClick={() => handleRemoveEditIngredient(i)}
                                   className="p-2 text-red-500 hover:bg-red-50 rounded cursor-pointer"
@@ -541,7 +568,7 @@ export const ChatOverview: React.FC = () => {
                                   type="text" 
                                   value={step}
                                   onChange={(e) => handleEditStepChange(i, e.target.value)}
-                                  className="flex-1 bg-zinc-55 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-xs text-zinc-800 dark:text-white"
+                                  className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2 text-xs text-zinc-800 dark:text-white"
                                 />
                                 <button 
                                   onClick={() => handleRemoveEditStep(i)}
@@ -608,26 +635,26 @@ export const ChatOverview: React.FC = () => {
 
                         {/* Nutrition Information */}
                         {msg.generatedRecipe.nutrition && (
-                          <div className="grid grid-cols-5 gap-1.5 py-2 border-y border-zinc-150 dark:border-zinc-800 text-center text-xs bg-zinc-50/40 dark:bg-zinc-800/20 rounded-xl">
+                          <div className="grid grid-cols-5 gap-1.5 py-2 border-y border-zinc-200 dark:border-zinc-800 text-center text-xs bg-zinc-50/40 dark:bg-zinc-800/20 rounded-xl">
                             <div>
                               <div className="font-bold text-zinc-900 dark:text-white">{msg.generatedRecipe.nutrition.caloriesPerServing || msg.generatedRecipe.nutrition.calories}</div>
-                              <div className="text-[10px] text-zinc-450">Calories</div>
+                              <div className="text-[10px] text-zinc-500 dark:text-zinc-400">Calories</div>
                             </div>
                             <div>
                               <div className="font-bold text-zinc-900 dark:text-white">{msg.generatedRecipe.nutrition.proteinPerServing || msg.generatedRecipe.nutrition.protein}g</div>
-                              <div className="text-[10px] text-zinc-450">Protein</div>
+                              <div className="text-[10px] text-zinc-500 dark:text-zinc-400">Protein</div>
                             </div>
                             <div>
                               <div className="font-bold text-zinc-900 dark:text-white">{msg.generatedRecipe.nutrition.carbohydratesPerServing || msg.generatedRecipe.nutrition.carbs}g</div>
-                              <div className="text-[10px] text-zinc-450">Carbs</div>
+                              <div className="text-[10px] text-zinc-500 dark:text-zinc-400">Carbs</div>
                             </div>
                             <div>
                               <div className="font-bold text-zinc-900 dark:text-white">{msg.generatedRecipe.nutrition.fatPerServing || msg.generatedRecipe.nutrition.fat}g</div>
-                              <div className="text-[10px] text-zinc-450">Fat</div>
+                              <div className="text-[10px] text-zinc-500 dark:text-zinc-400">Fat</div>
                             </div>
                             <div>
                               <div className="font-bold text-zinc-900 dark:text-white">{(msg.generatedRecipe.nutrition.fiber !== undefined ? msg.generatedRecipe.nutrition.fiber : 0)}g</div>
-                              <div className="text-[10px] text-zinc-450">Fiber</div>
+                              <div className="text-[10px] text-zinc-500 dark:text-zinc-400">Fiber</div>
                             </div>
                           </div>
                         )}
@@ -637,7 +664,7 @@ export const ChatOverview: React.FC = () => {
                           <h4 className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Ingredients</h4>
                           <ul className="text-xs space-y-1 text-zinc-700 dark:text-zinc-300">
                             {msg.generatedRecipe.ingredients.map((ing: any, i: number) => (
-                              <li key={i} className="flex justify-between border-b border-zinc-100/50 dark:border-zinc-850 pb-1">
+                              <li key={i} className="flex justify-between border-b border-zinc-100/50 dark:border-zinc-800 pb-1">
                                 <span>✓ {ing.name}</span>
                                 <span className="font-semibold">{ing.quantity} {ing.unit}</span>
                               </li>
@@ -661,7 +688,7 @@ export const ChatOverview: React.FC = () => {
                         {msg.generatedRecipe.tips && msg.generatedRecipe.tips.length > 0 && (
                           <div className="space-y-1.5 bg-zinc-50 dark:bg-zinc-800/40 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800">
                             <h4 className="text-xs font-bold text-amber-600 dark:text-amber-500">Chef Tips</h4>
-                            <ul className="text-xs space-y-1 text-zinc-600 dark:text-zinc-450 list-disc pl-4">
+                            <ul className="text-xs space-y-1 text-zinc-600 dark:text-zinc-400 list-disc pl-4">
                               {msg.generatedRecipe.tips.map((tip: string, i: number) => (
                                 <li key={i}>{tip}</li>
                               ))}
@@ -673,7 +700,7 @@ export const ChatOverview: React.FC = () => {
                         {msg.generatedRecipe.dietaryTags && msg.generatedRecipe.dietaryTags.length > 0 && (
                           <div className="flex flex-wrap gap-1">
                             {msg.generatedRecipe.dietaryTags.map((tag: string, i: number) => (
-                              <span key={i} className="text-[9px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-650 px-2 py-0.5 rounded">
+                              <span key={i} className="text-[9px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 px-2 py-0.5 rounded">
                                 {tag}
                               </span>
                             ))}
@@ -691,7 +718,7 @@ export const ChatOverview: React.FC = () => {
                         <div className="flex flex-wrap gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800 justify-end">
                           <button
                             onClick={() => startEditing(index)}
-                            className="flex items-center gap-1 px-3 py-1.5 border border-zinc-200 dark:border-zinc-750 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl text-xs font-bold transition cursor-pointer"
+                            className="flex items-center gap-1 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl text-xs font-bold transition cursor-pointer"
                           >
                             <Edit2 className="h-3.5 w-3.5" /> Edit
                           </button>
@@ -701,7 +728,7 @@ export const ChatOverview: React.FC = () => {
                               const lastUserMsg = [...messages].slice(0, index).reverse().find(m => m.role === "user")?.message;
                               if (lastUserMsg) handleSendMessage(lastUserMsg);
                             }}
-                            className="flex items-center gap-1 px-3 py-1.5 border border-zinc-200 dark:border-zinc-750 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl text-xs font-bold transition cursor-pointer"
+                            className="flex items-center gap-1 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl text-xs font-bold transition cursor-pointer"
                           >
                             <RefreshCw className="h-3.5 w-3.5" /> Regenerate
                           </button>
@@ -776,7 +803,7 @@ export const ChatOverview: React.FC = () => {
 
         {/* Suggestion Chips */}
         {messages.length === 0 && (
-          <div className="bg-white dark:bg-zinc-900 border-t border-zinc-150 dark:border-zinc-800 p-4 shrink-0">
+          <div className="bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 p-4 shrink-0">
             <span className="text-[10px] uppercase font-bold text-zinc-400 flex items-center gap-1 mb-2">
               <HelpCircle className="h-3.5 w-3.5 text-amber-500" /> Suggested Questions
             </span>
@@ -785,7 +812,7 @@ export const ChatOverview: React.FC = () => {
                 <button
                   key={idx}
                   onClick={() => handleSendMessage(q)}
-                  className="text-xs bg-zinc-55 hover:bg-amber-50 hover:text-amber-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-650 dark:text-zinc-300 px-3.5 py-2 rounded-xl transition cursor-pointer font-semibold border border-zinc-100 dark:border-zinc-850"
+                  className="text-xs bg-zinc-100 hover:bg-amber-50 hover:text-amber-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 px-3.5 py-2 rounded-xl transition cursor-pointer font-semibold border border-zinc-200 dark:border-zinc-700"
                 >
                   {q}
                 </button>
@@ -795,7 +822,7 @@ export const ChatOverview: React.FC = () => {
         )}
 
         {/* Text Input Panel */}
-        <div className="bg-white dark:bg-zinc-900 border-t border-zinc-150 dark:border-zinc-800 p-4 shrink-0 flex gap-3">
+        <div className="bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 p-4 shrink-0 flex gap-3">
           <input
             type="text"
             value={inputMessage}
@@ -803,7 +830,7 @@ export const ChatOverview: React.FC = () => {
             onKeyDown={handleKeyPress}
             disabled={status !== "connected"}
             placeholder={status === "connected" ? "What would you like me to cook?" : "Establishing WebSocket connection..."}
-            className="flex-1 bg-zinc-55 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-750 px-4 py-3 rounded-xl outline-none focus:border-amber-500 text-zinc-900 dark:text-white text-sm"
+            className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-3 rounded-xl outline-none focus:border-amber-500 text-zinc-900 dark:text-white text-sm"
           />
           <button
             onClick={() => handleSendMessage(inputMessage)}

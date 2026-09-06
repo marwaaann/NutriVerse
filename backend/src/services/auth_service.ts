@@ -35,8 +35,6 @@ export class AuthService implements IAuthService {
 
         const hashedPassword= await hashPassword(password)
 
-        logger.debug(`Hashed password is ${hashedPassword}`)
-
         const newUser=await this.userRepository.createUser({
             email,
             fullname,

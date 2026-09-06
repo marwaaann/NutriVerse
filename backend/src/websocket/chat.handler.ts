@@ -4,7 +4,7 @@ import { ClientChatMessage, ServerChatMessage } from "./chat.types";
 import { UserPreferencesModel } from "../models/userPreferences_model";
 import logger from "../config/logger";
 import axios from "axios";
-import { getRecipeImage } from "../helpers/recipeImageHelper";
+import { recipeImageService } from "../services/recipe_image_service";
 
 export class ChatHandler {
   async handleMessage(
@@ -111,7 +111,9 @@ export class ChatHandler {
           };
 
           logger.info(`[CHAT] Resolving image for recipe title: "${genRecipe.title}"`);
-          genRecipe.image = await getRecipeImage(genRecipe);
+          const imageResult = await recipeImageService.resolveRecipeImage(genRecipe);
+          genRecipe.image = imageResult.url;
+          genRecipe.imagePublicId = imageResult.publicId;
 
           const responseMessage: ServerChatMessage = {
             type: "CHAT_RESPONSE",

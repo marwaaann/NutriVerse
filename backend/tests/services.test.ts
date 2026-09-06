@@ -6,6 +6,7 @@ import { INutritionService, INutrition } from "../src/interface/INutritionServic
 import { IFoodDataClient } from "../src/interface/IFoodDataClient";
 import { IAIService } from "../src/interface/IAIService";
 import { IChatMessageRepository } from "../src/interface/IChatMessageRepository";
+import { INotificationService } from "../src/interface/INotificationService";
 import { IRecipe } from "../src/interface/IRecipe";
 
 describe("NutriVerse Services Tests", () => {
@@ -15,6 +16,7 @@ describe("NutriVerse Services Tests", () => {
   let mockFoodDataClient: jest.Mocked<IFoodDataClient>;
   let mockAIService: jest.Mocked<IAIService>;
   let mockChatMessageRepository: jest.Mocked<IChatMessageRepository>;
+  let mockNotificationService: jest.Mocked<INotificationService>;
 
   beforeEach(() => {
     mockRecipeRepository = {
@@ -46,6 +48,10 @@ describe("NutriVerse Services Tests", () => {
       generateRecipeAnalysis: jest.fn(),
       answerRecipeQuestion: jest.fn(),
       suggestRecipeModification: jest.fn(),
+      generateMealPlan: jest.fn(),
+      suggestMealSwaps: jest.fn(),
+      classifyRequest: jest.fn(),
+      generateRecipeFromPrompt: jest.fn(),
     };
 
     mockChatMessageRepository = {
@@ -55,13 +61,23 @@ describe("NutriVerse Services Tests", () => {
       findByRecipe: jest.fn(),
       deleteByRecipeAndUser: jest.fn(),
       deleteAllByRecipe: jest.fn(),
+      findUniqueConversations: jest.fn(),
+    };
+
+    mockNotificationService = {
+      createNotification: jest.fn(),
+      getUserNotifications: jest.fn(),
+      getUnreadCount: jest.fn(),
+      markAsRead: jest.fn(),
+      markAllAsRead: jest.fn(),
+      deleteNotification: jest.fn(),
     };
   });
 
   // --- RECIPE SERVICE TESTS ---
   describe("RecipeService", () => {
     it("should successfully create a recipe and calculate per-serving nutrition", async () => {
-      const recipeService = new RecipeService(mockRecipeRepository, mockNutritionService);
+      const recipeService = new RecipeService(mockRecipeRepository, mockNutritionService, mockNotificationService);
       
       const mockNutrition: INutrition = {
         calories: 600,

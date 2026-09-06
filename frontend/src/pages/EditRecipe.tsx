@@ -173,21 +173,21 @@ export const EditRecipe: React.FC = () => {
               <>
                 <Loader2 className="h-16 w-16 text-amber-500 animate-spin" />
                 <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-200">Re-analyzing ingredients...</h3>
-                <p className="text-sm text-zinc-500 dark:text-zinc-550">Gemini AI is parsing and normalizing quantities and units.</p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">Gemini AI is parsing and normalizing quantities and units.</p>
               </>
             )}
             {loadingStep === "calculating" && (
               <>
                 <Loader2 className="h-16 w-16 text-orange-500 animate-spin" />
                 <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-200">Re-calculating nutrition...</h3>
-                <p className="text-sm text-zinc-500 dark:text-zinc-550">Querying USDA FoodData Central and summing up macronutrients.</p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">Querying USDA FoodData Central and summing up macronutrients.</p>
               </>
             )}
             {loadingStep === "success" && (
               <>
                 <CheckCircle2 className="h-16 w-16 text-green-500 animate-bounce" />
                 <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-200">Nutrition saved successfully!</h3>
-                <p className="text-sm text-zinc-500 dark:text-zinc-550">Updating recipe details and redirecting...</p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">Updating recipe details and redirecting...</p>
               </>
             )}
           </div>
@@ -367,7 +367,7 @@ export const EditRecipe: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleRemoveStep(idx)}
-                        className="text-red-500 hover:text-red-650 p-2 mt-2 cursor-pointer"
+                        className="text-red-500 hover:text-red-700 p-2 mt-2 cursor-pointer"
                       >
                         <Trash2 className="h-5 w-5" />
                       </button>

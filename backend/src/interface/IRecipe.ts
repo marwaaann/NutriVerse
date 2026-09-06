@@ -24,6 +24,7 @@ export interface IRecipe {
   servings: number;
   category?: string;
   image?: string;
+  imagePublicId?: string;
   authorId: string;
   nutrition?: INutrition;
   caloriesPerServing?: number;

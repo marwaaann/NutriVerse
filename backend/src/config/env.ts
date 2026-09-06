@@ -18,6 +18,10 @@ export const ENV = {
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || "",
   FOOD_DATA_API_KEY: process.env.FOOD_DATA_API_KEY || "DEMO_KEY",
   GEMINI_MODEL: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
+  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || "",
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || "",
+  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || "",
+  RECIPE_IMAGE_API_KEY: process.env.RECIPE_IMAGE_API_KEY || process.env.UNSPLASH_ACCESS_KEY || "",
 };
 
 // Restart trigger

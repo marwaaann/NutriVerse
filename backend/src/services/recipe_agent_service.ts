@@ -9,7 +9,7 @@ import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import { ENV } from "../config/env";
 import logger from "../config/logger";
-import { getRecipeImage } from "../helpers/recipeImageHelper";
+import { recipeImageService } from "./recipe_image_service";
 
 const RecipeAgentStateAnnotation = Annotation.Root({
   query: Annotation<string>,
@@ -175,7 +175,9 @@ export class RecipeAgentService implements IRecipeAgentService {
           logger.info(`Agent Tool [generate_fallback_recipe] called with input: ${JSON.stringify(input)}`);
           // Generate a custom recipe using our AI service (which uses Gemini structured JSON schema)
           const recipe = await this.aiService.generateRecipeFromPrompt(input.prompt, {}, []);
-          recipe.image = await getRecipeImage(recipe);
+          const imageResult = await recipeImageService.resolveRecipeImage(recipe);
+          recipe.image = imageResult.url;
+          recipe.imagePublicId = imageResult.publicId;
           return JSON.stringify(recipe);
         } catch (error: any) {
           logger.error(`Error in generate_fallback_recipe tool: ${error.message}`);
