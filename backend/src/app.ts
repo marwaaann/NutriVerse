@@ -16,9 +16,9 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-app.use(express.urlencoded({ extended: true }))
-app.use(express.json());
-app.use(cookieparser())
+app.use(express.urlencoded({ extended: true, limit: "25mb" }));
+app.use(express.json({ limit: "25mb" }));
+app.use(cookieparser());
 
 app.use(requestLogger)
 app.use("/auth",auth_Routes)

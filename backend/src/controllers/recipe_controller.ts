@@ -6,6 +6,7 @@ import logger from "../config/logger";
 import { RecipeResponseDTO, NutritionResponseDTO } from "../dtos/recipe.dto";
 import { AppError } from "../utils/AppError";
 import { CreateRecipeInput, UpdateRecipeInput } from "../validators/recipeValidation";
+import { cloudinaryService } from "../services/cloudinary_service";
 
 export class RecipeController {
   constructor(
@@ -419,6 +420,41 @@ export class RecipeController {
       );
     } catch (error) {
       logger.error("Error deleting conversation:", error);
+      next(error);
+    }
+  };
+
+  uploadImage = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const userId = req.user?.user_Id;
+      if (!userId) {
+        throw new AppError("UNAUTHORIZED", 401);
+      }
+
+      const { image, title } = req.body;
+      if (!image) {
+        throw new AppError("Image data is required", 400);
+      }
+
+      if (cloudinaryService.isAvailable()) {
+        const uploadResult = await cloudinaryService.uploadRecipeImage(image, title || "user_recipe");
+        if (uploadResult) {
+          apiResponse(res, 200, true, "Image uploaded to Cloudinary successfully", uploadResult);
+          return;
+        }
+      }
+
+      // If Cloudinary is not configured or failed, return data URL directly
+      apiResponse(res, 200, true, "Image accepted", {
+        url: image,
+        publicId: undefined,
+      });
+    } catch (error) {
+      logger.error("Error uploading recipe image:", error);
       next(error);
     }
   };

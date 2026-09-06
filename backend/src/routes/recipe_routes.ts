@@ -18,6 +18,7 @@ export const createRecipeRoutes = (recipeController: RecipeController): Router =
   router.post("/", validate(createRecipeSchema), recipeController.createRecipe);
   router.put("/:id", validate(updateRecipeSchema), recipeController.updateRecipe);
   router.delete("/:id", recipeController.deleteRecipe);
+  router.post("/upload-image", recipeController.uploadImage);
   router.get("/user/my-recipes", recipeController.getUserRecipes);
   router.get("/user/dashboard-stats", recipeController.getDashboardStats);
   router.post("/:id/analyze-nutrition", recipeController.analyzeRecipeNutrition);

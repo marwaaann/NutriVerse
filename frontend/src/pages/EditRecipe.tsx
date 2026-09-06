@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { recipeService } from "../services/recipeService";
 import type { IngredientInput } from "../services/recipeService";
-import { ArrowLeft, Plus, Trash2, Sparkles, Loader2, CheckCircle2 } from "lucide-react";
+import axiosInstance from "../api/axiosInstance";
+import { ArrowLeft, Plus, Trash2, Sparkles, Loader2, CheckCircle2, Upload, X } from "lucide-react";
 import { showToast } from "../utils/toast";
 
 export const EditRecipe: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -15,6 +17,9 @@ export const EditRecipe: React.FC = () => {
   const [servings, setServings] = useState<number>(2);
   const [category, setCategory] = useState("Dinner");
   const [image, setImage] = useState("");
+  const [imagePublicId, setImagePublicId] = useState<string | undefined>(undefined);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [enterUrlManually, setEnterUrlManually] = useState(false);
   const [ingredients, setIngredients] = useState<IngredientInput[]>([
     { name: "", quantity: 1, unit: "piece" },
   ]);
@@ -24,6 +29,49 @@ export const EditRecipe: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingStep, setLoadingStep] = useState<"idle" | "analyzing" | "calculating" | "success">("idle");
+
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showToast.error("Please upload an image file (PNG, JPG, WEBP)");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      showToast.error("Image file size should be less than 10MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Data = reader.result as string;
+      setImage(base64Data); // Immediate local preview
+      setIsUploadingImage(true);
+
+      try {
+        const response = await axiosInstance.post("/api/recipes/upload-image", {
+          image: base64Data,
+          title: title || "recipe_photo"
+        });
+
+        if (response.data?.data?.url) {
+          setImage(response.data.data.url);
+          if (response.data.data.publicId) {
+            setImagePublicId(response.data.data.publicId);
+          }
+          showToast.success("Recipe photo uploaded successfully!");
+        }
+      } catch (err) {
+        console.error("Image upload error:", err);
+        showToast.error("Could not upload to Cloudinary. Preview retained.");
+      } finally {
+        setIsUploadingImage(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Load active recipe details
   useEffect(() => {
@@ -36,6 +84,7 @@ export const EditRecipe: React.FC = () => {
           setServings(recipe.servings);
           setCategory(recipe.category || "Dinner");
           setImage(recipe.image || "");
+          setImagePublicId(recipe.imagePublicId);
           setIngredients(
             recipe.ingredients.map(ing => ({
               name: ing.name,
@@ -127,6 +176,7 @@ export const EditRecipe: React.FC = () => {
         servings,
         category,
         image: image || undefined,
+        imagePublicId: imagePublicId || undefined,
       };
 
       await recipeService.updateRecipe(id, payload);
@@ -260,15 +310,87 @@ export const EditRecipe: React.FC = () => {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">Image URL</label>
-                <input
-                  type="url"
-                  value={image}
-                  onChange={(e) => setImage(e.target.value)}
-                  placeholder="https://example.com/recipe.jpg"
-                  className="w-full border border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500"
-                />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300">Recipe Photo</label>
+                  <button
+                    type="button"
+                    onClick={() => setEnterUrlManually(!enterUrlManually)}
+                    className="text-xs text-amber-600 hover:text-amber-700 font-semibold cursor-pointer"
+                  >
+                    {enterUrlManually ? "Upload Photo Instead" : "Or enter URL"}
+                  </button>
+                </div>
+
+                {enterUrlManually ? (
+                  <input
+                    type="url"
+                    value={image}
+                    onChange={(e) => setImage(e.target.value)}
+                    placeholder="https://example.com/recipe.jpg"
+                    className="w-full border border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500"
+                  />
+                ) : (
+                  <div>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept="image/*"
+                      onChange={handleImageFileChange}
+                      className="hidden"
+                    />
+
+                    {image ? (
+                      <div className="relative rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 p-2 flex items-center gap-3">
+                        <img
+                          src={image}
+                          alt="Recipe preview"
+                          className="h-16 w-20 object-cover rounded-xl border border-zinc-200 dark:border-zinc-700"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate">
+                            {isUploadingImage ? "Uploading to Cloudinary..." : "Recipe photo ready"}
+                          </p>
+                          <p className="text-[11px] text-zinc-500">
+                            {isUploadingImage ? "Processing image CDN..." : "Click change to select another photo"}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 pr-2">
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploadingImage}
+                            className="text-xs bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-800 dark:text-zinc-200 px-2.5 py-1.5 rounded-lg font-medium transition cursor-pointer"
+                          >
+                            Change
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setImage("");
+                              setImagePublicId(undefined);
+                              if (fileInputRef.current) fileInputRef.current.value = "";
+                            }}
+                            className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg cursor-pointer"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-amber-500 dark:hover:border-amber-500 rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition bg-zinc-50/50 dark:bg-zinc-800/30 hover:bg-amber-50/20"
+                      >
+                        <div className="h-9 w-9 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                          <Upload className="h-4.5 w-4.5" />
+                        </div>
+                        <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Click to upload dish photo</span>
+                        <span className="text-[11px] text-zinc-400">PNG, JPG or WEBP (Max 10MB)</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

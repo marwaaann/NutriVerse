@@ -15,6 +15,7 @@ export interface CreateRecipeInput {
   servings: number;
   category: string;
   image?: string;
+  imagePublicId?: string;
 }
 
 export interface RecipeIngredient extends IngredientInput {
@@ -38,6 +39,7 @@ export interface RecipeResponse {
   servings: number;
   category?: string;
   image?: string;
+  imagePublicId?: string;
   authorId: string;
   nutrition?: {
     calories: number;
