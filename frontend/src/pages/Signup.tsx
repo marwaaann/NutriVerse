@@ -7,10 +7,11 @@ import { signupSchema } from "../validation/userSignupSchema";
 import { z } from "zod";
 import Button from "../componets/Buttons/Button";
 import { signup } from "../services/signupUser";
-import { showToast } from "../utils/toast";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import AuthRedirectText from "../componets/Texts/AuthRedirectText";
 import H2Heading from "../componets/Headings/H2Heading";
+import { showToast } from "../utils/toast";
 
 
 type SignupFormType = z.infer<typeof signupSchema>;
@@ -22,16 +23,22 @@ const {register,setError,handleSubmit,formState:{errors}} =useForm<SignupFormTyp
 
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
-  const [isLoading,setIsLoading]=useState<boolean>(false)
-  const navigate=useNavigate()
+  const [isLoading,setIsLoading]=useState<boolean>(false);
+  const queryClient = useQueryClient();
+  const navigate=useNavigate();
 
 const onSubmit = async(data: SignupFormType) => {
-  setIsLoading(true)
-  const response=await signup(data);
-  if(response.success){
-    showToast.success(response.message);
-    navigate("/auth/signin")
-  }else if(!response.success){
+  setIsLoading(true);
+  const response = await signup(data);
+  if (response.success) {
+    const token = (response as any).data?.accessToken;
+    if (token) {
+      localStorage.setItem("accessToken", token);
+    }
+    showToast.success("Account created successfully! Welcome to NutriVerse.");
+    await queryClient.invalidateQueries({ queryKey: ["me"] });
+    navigate("/onboarding");
+  } else if (!response.success) {
     if(response.message==="User already exists"){
         setError("email", {
             type: "server",

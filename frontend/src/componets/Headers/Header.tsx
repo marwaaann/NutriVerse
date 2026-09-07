@@ -113,10 +113,10 @@ export default function Headers() {
             </NavLink>
 
             <NavLink
-              to="/settings"
+              to="/profile"
               className={({ isActive }) =>`px-2 py-1 rounded transition ${isActive? "text-amber-600 font-semibold dark:text-amber-400": "text-gray-600 hover:text-amber-500 dark:text-gray-300 dark:hover:text-amber-400"}`}
             >
-              Settings
+              Profile
             </NavLink>
 
             <button
@@ -282,11 +282,11 @@ export default function Headers() {
             </NavLink>
 
             <NavLink
-              to="/settings"
+              to="/profile"
               onClick={() => setOpen(false)}
               className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
-              Settings
+              Profile
             </NavLink>
 
             <button

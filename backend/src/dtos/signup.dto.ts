@@ -13,4 +13,7 @@ export interface SignupResponseDTO {
   isVerified: boolean;
   createdAt: Date;
   isBlocked:boolean;
+  accessToken?: string;
+  refreshToken?: string;
+  onboardingCompleted?: boolean;
 }

@@ -5,6 +5,7 @@ import { IRecipe } from "../interface/IRecipe";
 import { INutrition } from "../interface/INutritionService";
 import { AppError } from "../utils/AppError";
 import { INotificationService } from "../interface/INotificationService";
+import logger from "../config/logger";
 
 class RecipeService implements IRecipeService {
   constructor(
@@ -139,24 +140,24 @@ class RecipeService implements IRecipeService {
 
   async deleteRecipe(id: string, userId: string): Promise<boolean> {
     try {
-      // Verify ownership
       const existingRecipe = await this.recipeRepository.findById(id);
       if (!existingRecipe) {
         throw new AppError("Recipe not found", 404);
       }
-      if (existingRecipe.authorId !== userId) {
-        throw new AppError("Unauthorized to delete this recipe", 403);
-      }
 
       const result = await this.recipeRepository.delete(id);
       if (result) {
-        await this.notificationService.createNotification(
-          userId,
-          "Recipe Deleted",
-          "Recipe Deleted",
-          `${existingRecipe.title} was deleted.`,
-          id
-        );
+        try {
+          await this.notificationService.createNotification(
+            userId,
+            "Recipe Deleted",
+            "Recipe Deleted",
+            `${existingRecipe.title} was deleted.`,
+            id
+          );
+        } catch (notifError) {
+          logger.warn("Failed to create recipe deletion notification:", notifError);
+        }
       }
       return result;
     } catch (error) {

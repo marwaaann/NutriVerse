@@ -38,10 +38,26 @@ const userSchema = new Schema<IUserModel>(
         type:Boolean,
         default:false
     },
-    onboardingCompleted:{
-        type:Boolean,
-        default:false
-    }
+    onboardingCompleted: {
+      type: Boolean,
+      default: false,
+    },
+    height: { type: Number },
+    heightUnit: { type: String, default: "cm" },
+    weight: { type: Number },
+    weightUnit: { type: String, default: "kg" },
+    age: { type: Number },
+    gender: { type: String },
+    activityLevel: { type: String },
+    bmi: { type: Number },
+    bmiCategory: { type: String },
+    healthGoal: { type: String },
+    dietaryPreference: { type: String },
+    allergies: { type: [String], default: [] },
+    foodPreferences: { type: [String], default: [] },
+    preferredCuisines: { type: [String], default: [] },
+    mealsPerDay: { type: Number, default: 3 },
+    dailyCalorieTarget: { type: Number },
   },
   {
     timestamps: true, // adds createdAt & updatedAt

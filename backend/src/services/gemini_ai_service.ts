@@ -167,8 +167,18 @@ Highlight the macronutrient profile, potential health benefits, and any health a
         return "AI service is currently unavailable. Please configure the Gemini API key.";
       }
 
-      const prompt = `You are a context-aware nutrition and recipe assistant. Answer the user's question about the recipe.
-CRITICAL INSTRUCTION: Prioritize stored recipe data, ingredients, and stored nutrition data rather than inventing information. If the answer is not available or cannot be reasonably inferred from the recipe context, clearly state that you do not have enough information.
+      const prompt = `You are an expert culinary chef and context-aware nutrition assistant for NutriVerse.
+Answer the user's question with detailed, accurate, appetizing, and helpful culinary and nutrition information.
+
+CRITICAL GUIDELINES:
+1. If the user asks about a specific dish or recipe (e.g. "Tell me about the recipe for Kerala Style Chicken Curry with Matta Rice"):
+   - Provide a complete, structured recipe description.
+   - List the essential ingredients with recommended quantities.
+   - Provide step-by-step cooking & preparation instructions.
+   - Mention prep time, cooking time, servings, and estimated nutrition breakdown (Calories, Protein, Carbs, Fat).
+2. If stored recipe data is present in the context, prioritize it.
+3. If the dish is NOT stored in the context, provide authentic, traditional culinary recipe knowledge for that dish. Do NOT say you do not have enough information!
+4. Format your response cleanly using markdown (bold headings, bullet points).
 
 Recipe Context:
 ${JSON.stringify(recipeContext, null, 2)}
@@ -230,9 +240,67 @@ Requested modification:
     }
   }
 
-  private getFallbackMealPlan(dateStr: string): any {
+  private getFallbackMealPlan(dateStr: string, preferencesContext?: Record<string, any>): any {
     const date = new Date(dateStr);
     const day = isNaN(date.getTime()) ? 0 : date.getDay(); // 0 is Sunday, 6 is Saturday
+
+    const cuisines: string[] = preferencesContext?.userPreferences?.cuisines || [];
+    const isKeralaOrIndian = cuisines.length === 0 || cuisines.some(c => /kerala|indian|south indian/i.test(c));
+
+    if (isKeralaOrIndian) {
+      const keralaPlans = [
+        // 0: Sunday
+        {
+          breakfast: { title: "Kerala Egg Roast with Appam", reason: "Traditional Sunday breakfast with spiced eggs and fluffy fermented rice appam.", calories: 380, protein: 18, carbs: 42, fat: 14, servings: 2 },
+          lunch: { title: "Kerala Style Chicken Curry with Matta Rice", reason: "Authentic homestyle coconut chicken curry with hearty Kerala Matta rice.", calories: 550, protein: 42, carbs: 58, fat: 16, servings: 2 },
+          snack: { title: "Pazham Pori (Banana Fritters)", reason: "Crisp and naturally sweet classic Kerala tea-time treat.", calories: 160, protein: 2, carbs: 32, fat: 4, servings: 2 },
+          dinner: { title: "Kozhi Nirachathu with Wheat Roti", reason: "High-protein Malabar roasted chicken preparation paired with fiber-rich roti.", calories: 520, protein: 38, carbs: 46, fat: 15, servings: 2 }
+        },
+        // 1: Monday
+        {
+          breakfast: { title: "Steamed Puttu with Kadala Curry", reason: "Wholesome fiber and protein combination of black chickpeas and steamed rice cylinders.", calories: 360, protein: 16, carbs: 62, fat: 6, servings: 2 },
+          lunch: { title: "Kerala Fish Curry with Rice & Aviyal", reason: "Tangy Kudampuli fish curry with steamed rice and mixed vegetable aviyal.", calories: 520, protein: 36, carbs: 55, fat: 14, servings: 2 },
+          snack: { title: "Boiled Egg Chaat with Mint & Pepper", reason: "Quick protein booster snack with refreshing garden mint.", calories: 140, protein: 12, carbs: 4, fat: 9, servings: 2 },
+          dinner: { title: "Light Kerala Chicken Stew with Chapati", reason: "Gentle coconut-milk chicken stew with fresh steamed carrots and beans.", calories: 440, protein: 32, carbs: 44, fat: 12, servings: 2 }
+        },
+        // 2: Tuesday
+        {
+          breakfast: { title: "Masala Dosa with Sambar & Coconut Chutney", reason: "Fermented crispy crepe filled with spiced potato masala.", calories: 330, protein: 9, carbs: 54, fat: 10, servings: 2 },
+          lunch: { title: "Malabar Chicken Biryani with Raita", reason: "Fragrant short-grain Khaima rice chicken biryani with chilled onion raita.", calories: 620, protein: 40, carbs: 68, fat: 18, servings: 2 },
+          snack: { title: "Spiced Roasted Makhana & Chana", reason: "Crunchy low-glycemic roasted snack packed with minerals.", calories: 150, protein: 7, carbs: 22, fat: 4, servings: 2 },
+          dinner: { title: "Kerala Egg Masala with Phulka & Dal", reason: "Rich roasted egg gravy served with soft phulkas and yellow lentils.", calories: 420, protein: 22, carbs: 48, fat: 12, servings: 2 }
+        },
+        // 3: Wednesday
+        {
+          breakfast: { title: "Steamed Idli with Sambar & Tomato Chutney", reason: "Steamed and fermented easily-digestible South Indian breakfast staple.", calories: 280, protein: 8, carbs: 52, fat: 3, servings: 2 },
+          lunch: { title: "Pepper Chicken Roast with Whole Wheat Parotta", reason: "Black pepper roasted chicken with flaky layered wheat bread.", calories: 570, protein: 44, carbs: 50, fat: 16, servings: 2 },
+          snack: { title: "Fresh Fruit Salad with Chaat Masala", reason: "Hydrating seasonal fruit platter sprinkled with tangy chaat spices.", calories: 130, protein: 2, carbs: 30, fat: 1, servings: 2 },
+          dinner: { title: "Fish Moilee with Steamed Rice", reason: "Mildly spiced coconut milk fish curry with aromatic curry leaves.", calories: 460, protein: 34, carbs: 50, fat: 11, servings: 2 }
+        },
+        // 4: Thursday
+        {
+          breakfast: { title: "Speedy Spinach and Feta Scrambled Eggs", reason: "Iron and protein rich quick morning scramble with whole grain toast.", calories: 340, protein: 20, carbs: 22, fat: 18, servings: 2 },
+          lunch: { title: "Authentic Kerala Vegetarian Sadya Lunch", reason: "Complete traditional feast: Matta rice, sambar, thoran, and papadam.", calories: 510, protein: 15, carbs: 82, fat: 10, servings: 2 },
+          snack: { title: "Cucumber & Carrot Sticks with Peanut Dip", reason: "Crisp raw vegetables with savory protein dip.", calories: 120, protein: 4, carbs: 12, fat: 7, servings: 2 },
+          dinner: { title: "Lemon Herb Grilled Chicken with Roasted Asparagus", reason: "Lean chicken breast seasoned with zesty herbs and roasted greens.", calories: 470, protein: 42, carbs: 24, fat: 14, servings: 2 }
+        },
+        // 5: Friday
+        {
+          breakfast: { title: "Thattukada Style Egg Dosa with Chutney", reason: "Popular street-style egg-topped crispy dosa with red chili chutney.", calories: 350, protein: 16, carbs: 46, fat: 12, servings: 2 },
+          lunch: { title: "Kerala Chicken Mappas with Rice", reason: "Rich coriander and coconut milk chicken curry served with steamed rice.", calories: 540, protein: 38, carbs: 56, fat: 15, servings: 2 },
+          snack: { title: "Roasted Cashews & Raisins", reason: "Heart-healthy fats and natural energy booster.", calories: 180, protein: 5, carbs: 16, fat: 12, servings: 2 },
+          dinner: { title: "Grilled Fish Tikka with Stir-fried Beans", reason: "Omega-3 rich fish fillets grilled with green beans and roti.", calories: 430, protein: 36, carbs: 32, fat: 11, servings: 2 }
+        },
+        // 6: Saturday
+        {
+          breakfast: { title: "Kerala Mutta Porichathu (Egg Bhurji) & Toast", reason: "Quick scrambled eggs with onions, green chilies, and curry leaves.", calories: 330, protein: 18, carbs: 30, fat: 14, servings: 2 },
+          lunch: { title: "Malabar Chicken Ghee Rice with Pickle & Raita", reason: "Aromatic spiced ghee rice paired with succulent chicken curry.", calories: 630, protein: 38, carbs: 70, fat: 20, servings: 2 },
+          snack: { title: "Spiced Roasted Corn on the Cob", reason: "Smoky sweet corn basted with lime and chili powder.", calories: 150, protein: 4, carbs: 30, fat: 2, servings: 2 },
+          dinner: { title: "Chicken Tikka with Mint Chutney & Phulka", reason: "Tandoori seasoned lean chicken with whole wheat bread.", calories: 490, protein: 40, carbs: 42, fat: 12, servings: 2 }
+        }
+      ];
+      return keralaPlans[day] || keralaPlans[0];
+    }
 
     const plans = [
       // 0: Sunday
@@ -292,20 +360,40 @@ Requested modification:
   async generateMealPlan(
     preferencesContext: Record<string, any>,
     availableRecipes: any[],
-    dateStr?: string
+    dateStr?: string,
+    avoidDishes?: string[]
   ): Promise<any> {
     try {
       logger.debug("GeminiAIService: Generating structured meal plan");
 
       if (!this.hasApiKey()) {
         logger.info("GeminiAIService fallback: returning pre-defined meal plan");
-        return this.getFallbackMealPlan(dateStr || "");
+        return this.getFallbackMealPlan(dateStr || "", preferencesContext);
       }
 
-      const prompt = `You are a personalized meal-planning assistant for a household. Build a full-day meal plan (Breakfast, Lunch, Snack, Dinner) matching the household profile:
+      const avoidListStr = avoidDishes && avoidDishes.length > 0
+        ? `\nCRITICAL VARIETY CONSTRAINT: DO NOT repeat any of the following dishes already served on other days of the week: ${avoidDishes.join(", ")}.\n`
+        : "";
+
+      const userBmiCategory = preferencesContext.userPreferences?.bmiCategory || "";
+      const userGoal = preferencesContext.userPreferences?.healthGoals?.[0] || "";
+      const calorieTarget = preferencesContext.userPreferences?.dailyCalorieTarget || "";
+
+      const healthGuidelines = userBmiCategory ? `
+HEALTH & BMI TARGET GUIDELINES:
+- User BMI Category: ${userBmiCategory} (Daily Target: ~${calorieTarget} kcal/day).
+- Main Goal: ${userGoal}.
+- IF UNDERWEIGHT: Prioritize nutrient-dense and protein-rich foods, healthy fats, and healthy caloric density.
+- IF NORMAL WEIGHT: Provide balanced macronutrients, sustained energy, and whole foods.
+- IF OVERWEIGHT / OBESE: Emphasize generous vegetables, lean proteins, high-fiber foods, and appropriate portion sizes. Avoid extreme calorie restriction.
+- SAFETY RULE: Never prescribe dangerous crash diets or extreme deficits.
+` : "";
+
+      const prompt = `You are a personalized meal-planning assistant for a household. Build a full-day meal plan (Breakfast, Lunch, Snack, Dinner) for date "${dateStr || 'today'}".
 Preferences and constraints:
 ${JSON.stringify(preferencesContext, null, 2)}
-
+${healthGuidelines}
+${avoidListStr}
 Available recipe collection context:
 ${JSON.stringify(availableRecipes.map(r => ({
   id: r._id,
@@ -316,10 +404,12 @@ ${JSON.stringify(availableRecipes.map(r => ({
   nutrition: r.nutrition || {}
 })), null, 2)}
 
-CRITICAL REQUIREMENT:
+CRITICAL REQUIREMENTS:
 1. STRICTLY satisfy all allergies listed in the preferences (MUST NOT contain any ingredients that the user is allergic to).
-2. Choose recipes from the available recipe collection when appropriate. If no suitable recipe is in the collection, suggest a new recipe with a title, default servings, estimated calories, protein, carbs, fat, and a "reason" matching the user's cuisine/preference.
-3. Return the response strictly as valid JSON structure matching:
+2. DIVERSITY & NON-REPETITION: Every day of the week must have completely different, delicious varieties matching the user's cuisine preference (${JSON.stringify(preferencesContext.userPreferences?.cuisines || [])}) and non-veg preferences (${JSON.stringify(preferencesContext.userPreferences?.nonVegPreference || [])}).
+3. NUTRITIONAL TARGET: Aligns with the user's BMI category (${userBmiCategory || 'healthy'}) and target calories (~${calorieTarget || '2000'} kcal/day).
+4. Choose recipes from the available recipe collection when appropriate. If no suitable recipe is in the collection or to ensure variety, suggest a new recipe with a title, default servings, estimated calories, protein, carbs, fat, and a "reason" matching the user's cuisine/preference.
+5. Return the response strictly as valid JSON structure matching:
 {
   "breakfast": { "recipeId": "optional database recipe id", "title": "recipe title", "reason": "why this matches preferences", "calories": 400, "protein": 25, "carbs": 40, "fat": 12, "servings": 2 },
   "lunch": { "recipeId": "optional database recipe id", "title": "recipe title", "reason": "why this matches preferences", "calories": 600, "protein": 40, "carbs": 60, "fat": 18, "servings": 2 },
@@ -512,6 +602,22 @@ Return the alternatives strictly as valid JSON structure matching:
         return false;
       }
 
+      // Informational Q&A (e.g. "Tell me about the recipe for...", "What is...", "Describe...")
+      const isInformationalQuery = 
+        promptLower.startsWith("tell me about") ||
+        promptLower.startsWith("tell me") ||
+        promptLower.startsWith("what is") ||
+        promptLower.startsWith("explain") ||
+        promptLower.startsWith("describe") ||
+        promptLower.startsWith("can you tell me") ||
+        promptLower.includes("tell me about") ||
+        promptLower.includes("what are the ingredients");
+
+      if (isInformationalQuery) {
+        logger.info(`Classified user request locally: "${userPrompt}" -> QUESTION (Informational Q&A)`);
+        return false;
+      }
+
       // Strong Recipe Cues
       const hasRecipeCues = 
         promptLower.startsWith("recipe for") ||
@@ -698,5 +804,143 @@ CRITICAL INSTRUCTIONS:
       logger.error("Error in generateRecipeFromPrompt:", error);
       throw error;
     }
+  }
+
+  async generateIngredientsForDishes(
+    dishTitles: string[]
+  ): Promise<Array<{ name: string; quantity: number; unit: string; category: string }>> {
+    try {
+      if (!this.hasApiKey() || dishTitles.length === 0) {
+        return this.getFallbackIngredientsForDishes(dishTitles);
+      }
+
+      const prompt = `You are a grocery list assistant. The user wants to buy all raw grocery ingredients needed to cook these meal dishes:
+${dishTitles.map(t => `- ${t}`).join("\n")}
+
+Return a comprehensive consolidated list of raw ingredients needed with realistic quantities for 2 servings each. Combine overlapping ingredients.
+Return strictly valid JSON matching this schema:
+{
+  "items": [
+    { "name": "ingredient name", "quantity": 2, "unit": "pcs", "category": "Produce" }
+  ]
+}`;
+
+      const response = await this.ai.models.generateContent({
+        model: this.modelName,
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              items: {
+                type: "ARRAY",
+                items: {
+                  type: "OBJECT",
+                  properties: {
+                    name: { type: "STRING" },
+                    quantity: { type: "NUMBER" },
+                    unit: { type: "STRING" },
+                    category: { type: "STRING" }
+                  },
+                  required: ["name", "quantity", "unit", "category"]
+                }
+              }
+            },
+            required: ["items"]
+          }
+        }
+      });
+
+      const parsed = JSON.parse(response.text || "{}");
+      if (Array.isArray(parsed.items) && parsed.items.length > 0) {
+        return parsed.items;
+      }
+      return this.getFallbackIngredientsForDishes(dishTitles);
+    } catch (error) {
+      logger.error("GeminiAIService error in generateIngredientsForDishes:", error);
+      return this.getFallbackIngredientsForDishes(dishTitles);
+    }
+  }
+
+  private getFallbackIngredientsForDishes(
+    dishTitles: string[]
+  ): Array<{ name: string; quantity: number; unit: string; category: string }> {
+    const itemsMap = new Map<string, { name: string; quantity: number; unit: string; category: string }>();
+
+    const add = (name: string, quantity: number, unit: string, category: string) => {
+      const key = name.toLowerCase().trim();
+      if (itemsMap.has(key)) {
+        itemsMap.get(key)!.quantity += quantity;
+      } else {
+        itemsMap.set(key, { name, quantity, unit, category });
+      }
+    };
+
+    for (const title of dishTitles) {
+      const t = title.toLowerCase();
+      if (t.includes("egg")) {
+        add("Fresh Eggs", 4, "pcs", "Dairy & Eggs");
+        add("Onions", 2, "pcs", "Produce");
+        add("Tomatoes", 2, "pcs", "Produce");
+        add("Green Chilies", 2, "pcs", "Produce");
+        add("Curry Leaves", 1, "bunch", "Produce");
+        add("Coconut Oil", 2, "tbsp", "Pantry");
+      }
+      if (t.includes("appam")) {
+        add("Rice Flour / Appam Batter", 500, "g", "Pantry");
+        add("Coconut Milk", 200, "ml", "Pantry");
+      }
+      if (t.includes("chicken")) {
+        add("Fresh Chicken", 500, "g", "Meat & Seafood");
+        add("Ginger-Garlic Paste", 2, "tbsp", "Pantry");
+        add("Garam Masala Powder", 1, "tbsp", "Spices");
+        add("Turmeric Powder", 1, "tsp", "Spices");
+        add("Chili Powder", 1, "tbsp", "Spices");
+        add("Coriander Powder", 1, "tbsp", "Spices");
+      }
+      if (t.includes("matta") || t.includes("rice")) {
+        add("Kerala Matta Rice", 500, "g", "Grains & Pasta");
+      }
+      if (t.includes("biryani")) {
+        add("Basmati / Khaima Rice", 500, "g", "Grains & Pasta");
+        add("Yogurt / Curd", 200, "g", "Dairy & Eggs");
+        add("Mint Leaves", 1, "bunch", "Produce");
+        add("Biryani Masala", 2, "tbsp", "Spices");
+      }
+      if (t.includes("fish")) {
+        add("Fresh Fish Steaks", 400, "g", "Meat & Seafood");
+        add("Kudampuli (Cocum)", 3, "pcs", "Pantry");
+        add("Fenugreek Seeds", 1, "tsp", "Spices");
+      }
+      if (t.includes("puttu") || t.includes("kadala")) {
+        add("Puttu Podi (Rice Flour)", 400, "g", "Pantry");
+        add("Grated Coconut", 1, "cup", "Produce");
+        add("Black Chickpeas (Kadala)", 250, "g", "Pantry");
+      }
+      if (t.includes("dosa") || t.includes("idli")) {
+        add("Idli/Dosa Batter", 1, "kg", "Pantry");
+        add("Sambar Vegetables (Drumstick, Carrot)", 300, "g", "Produce");
+        add("Toor Dal", 150, "g", "Pantry");
+      }
+      if (t.includes("spinach")) {
+        add("Fresh Spinach", 200, "g", "Produce");
+        add("Feta Cheese", 100, "g", "Dairy & Eggs");
+      }
+      if (t.includes("orange juice")) {
+        add("Fresh Oranges", 6, "pcs", "Produce");
+      }
+      if (t.includes("avocado")) {
+        add("Ripe Avocados", 2, "pcs", "Produce");
+      }
+      if (t.includes("banana")) {
+        add("Nendran Bananas", 4, "pcs", "Produce");
+      }
+
+      // Base staple seasonings
+      add("Salt", 1, "pack", "Pantry");
+    }
+
+    return Array.from(itemsMap.values());
   }
 }

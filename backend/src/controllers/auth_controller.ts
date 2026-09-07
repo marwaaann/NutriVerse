@@ -25,6 +25,26 @@ export class AuthController implements IAuthController{
 
             logger.info("Account created successfully", { userId: result.id })
 
+            const crossSiteCookies = ENV.NODE_ENV === "production" || ENV.FRONTEND_URL.startsWith("https://");
+
+            if (result.accessToken) {
+                res.cookie("accessToken", result.accessToken, {
+                    httpOnly: true,
+                    secure: crossSiteCookies,
+                    sameSite: crossSiteCookies ? "none" : "lax",
+                    maxAge: 15 * 60 * 1000, // 15 min
+                });
+            }
+
+            if (result.refreshToken) {
+                res.cookie("refreshToken", result.refreshToken, {
+                    httpOnly: true,
+                    secure: crossSiteCookies,
+                    sameSite: crossSiteCookies ? "none" : "lax",
+                    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+                });
+            }
+
             apiResponse<SignupResponseDTO>(res,201,true,"Account created successfully",result)
         } catch (error) {
             logger.error("Signup failed:", error instanceof Error ? error.message : "Unknown error")
@@ -118,8 +138,7 @@ export class AuthController implements IAuthController{
             if (!userId) {
                 throw new AppError("UNAUTHORIZED", 401);
             }
-            const { fullname } = req.body;
-            const user = await this.authService.updateProfile(userId, { fullname });
+            const user = await this.authService.updateProfile(userId, req.body);
             apiResponse(res, 200, true, "Profile updated successfully", user);
         } catch (error) {
             next(error)

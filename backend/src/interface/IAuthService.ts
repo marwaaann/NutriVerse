@@ -11,5 +11,5 @@ export interface IAuthService {
   signin(data: SigninRequestDTO):Promise<SigninResponseDTO>;
   getMe(data:string):Promise<GetMeResponseDTO>;
   getAllUsers(limit?: number, offset?: number): Promise<IUserModel[]>;
-  updateProfile(userId: string, data: { fullname?: string }): Promise<GetMeResponseDTO>;
+  updateProfile(userId: string, data: Partial<IUserModel>): Promise<GetMeResponseDTO>;
 }

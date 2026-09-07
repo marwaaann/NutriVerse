@@ -115,9 +115,15 @@ export class ChatHandler {
           genRecipe.image = imageResult.url;
           genRecipe.imagePublicId = imageResult.publicId;
 
+          let responseTextMessage = genRecipe.conflictResolution || "Here is the recipe I've generated based on your requirements. You can review, edit, or add it to your library below.";
+          const ingList = genRecipe.ingredients?.map((i: any) => `- ${i.quantity} ${i.unit} ${i.name}`).join("\n");
+          const stepList = genRecipe.preparationSteps?.map((s: any, idx: number) => `${idx + 1}. ${s}`).join("\n");
+          const recipeSummary = `\n\n### ${genRecipe.title}\n${genRecipe.description || ""}\n\n**⏱ Prep/Cook Time:** ${genRecipe.cookingTime} mins | **Servings:** ${genRecipe.servings}\n\n**Ingredients:**\n${ingList}\n\n**Instructions:**\n${stepList}`;
+          responseTextMessage += recipeSummary;
+
           const responseMessage: ServerChatMessage = {
             type: "CHAT_RESPONSE",
-            message: genRecipe.conflictResolution || "Here is the recipe I've generated based on your requirements. You can review, edit, or add it to your library below.",
+            message: responseTextMessage,
             recipeId,
             timestamp: new Date().toISOString(),
             isRecipeGeneration: true,

@@ -28,6 +28,10 @@ export function SigninPage() {
         setIsLoading(true)
         const response=await signin(data)
         if(response.success){
+            const token = (response as any).data?.accessToken;
+            if (token) {
+                localStorage.setItem("accessToken", token);
+            }
             showToast.success(response.message)
             await queryClient.invalidateQueries({ queryKey: ["me"] });
             navigate("/dashboard");

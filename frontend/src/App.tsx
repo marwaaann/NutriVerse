@@ -14,7 +14,7 @@ import { CreateRecipe } from './pages/CreateRecipe';
 import { RecipeDetail } from './pages/RecipeDetail';
 import { Dashboard } from './pages/Dashboard';
 import { Users } from './pages/Users';
-import { Settings } from './pages/Settings';
+import { Profile } from './pages/Profile';
 import { ChatOverview } from './pages/ChatOverview';
 import { Onboarding } from './pages/Onboarding';
 import { Grocery } from './pages/Grocery';
@@ -56,7 +56,8 @@ function App() {
       <Route path='/dashboard' element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>}/>
       <Route path='/grocery' element={<ProtectedRoute><Layout><Grocery /></Layout></ProtectedRoute>}/>
       <Route path='/users' element={<ProtectedRoute><Layout><Users /></Layout></ProtectedRoute>}/>
-      <Route path='/settings' element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>}/>
+      <Route path='/profile' element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>}/>
+      <Route path='/settings' element={<Navigate to="/profile" replace />}/>
       <Route path='/chat' element={<ProtectedRoute><Layout><ChatOverview /></Layout></ProtectedRoute>}/>
       <Route path='/recipes' element={<ProtectedRoute><Layout><RecipesList /></Layout></ProtectedRoute>}/>
       <Route path='/recipes/create' element={<ProtectedRoute><Layout><CreateRecipe /></Layout></ProtectedRoute>}/>

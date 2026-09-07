@@ -152,6 +152,7 @@ class RecipeImageService {
           logger.info(`AI dish image saved to Cloudinary: ${uploadRes.url}`);
           return uploadRes;
         }
+        throw new Error("Cloudinary upload failed for AI generated image");
       }
       return { url: pollinationsUrl };
     } catch (aiErr: any) {
@@ -162,8 +163,12 @@ class RecipeImageService {
     const curatedUrl = getCuratedDishFallback(title);
     if (curatedUrl) {
       if (cloudinaryService.isAvailable()) {
-        const uploadRes = await cloudinaryService.uploadRecipeImage(curatedUrl, title);
-        if (uploadRes) return uploadRes;
+        try {
+          const uploadRes = await cloudinaryService.uploadRecipeImage(curatedUrl, title);
+          if (uploadRes) return uploadRes;
+        } catch {
+          // Use raw curated url
+        }
       }
       return { url: curatedUrl };
     }

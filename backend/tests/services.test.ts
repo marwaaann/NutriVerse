@@ -52,6 +52,7 @@ describe("NutriVerse Services Tests", () => {
       suggestMealSwaps: jest.fn(),
       classifyRequest: jest.fn(),
       generateRecipeFromPrompt: jest.fn(),
+      generateIngredientsForDishes: jest.fn(),
     };
 
     mockChatMessageRepository = {

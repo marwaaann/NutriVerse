@@ -9,6 +9,7 @@ interface RecipeChatbotProps {
 interface ChatMessage {
   role: "user" | "assistant";
   message: string;
+  generatedRecipe?: any;
 }
 
 const SUGGESTED_QUESTIONS = [
@@ -29,14 +30,22 @@ export const RecipeChatbot: React.FC<RecipeChatbotProps> = ({ recipeId }) => {
 
   const socketRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const pendingMessageRef = useRef<string | null>(null);
 
   const activeRecipeId = recipeId || "general";
 
-  // Reset messages when opened or closed
+  // Reset messages when activeRecipeId changes, or when user closes chatbot
+  useEffect(() => {
+    if (!isOpen) {
+      setMessages([]);
+      setChatError(null);
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     setMessages([]);
     setChatError(null);
-  }, [isOpen, activeRecipeId]);
+  }, [activeRecipeId]);
 
   // WebSocket Connection
   useEffect(() => {
@@ -57,6 +66,19 @@ export const RecipeChatbot: React.FC<RecipeChatbotProps> = ({ recipeId }) => {
 
     ws.onopen = () => {
       setStatus("connected");
+      if (pendingMessageRef.current) {
+        const textToSend = pendingMessageRef.current;
+        pendingMessageRef.current = null;
+        const payload = {
+          type: "CHAT_MESSAGE",
+          recipeId: activeRecipeId,
+          message: textToSend,
+        };
+        ws.send(JSON.stringify(payload));
+        setMessages((prev) => [...prev, { role: "user", message: textToSend }]);
+        setInputMessage("");
+        setIsTyping(true);
+      }
     };
 
     ws.onmessage = (event) => {
@@ -67,7 +89,7 @@ export const RecipeChatbot: React.FC<RecipeChatbotProps> = ({ recipeId }) => {
           setChatError(null);
           setMessages((prev) => [
             ...prev,
-            { role: "assistant", message: data.message },
+            { role: "assistant", message: data.message, generatedRecipe: data.generatedRecipe },
           ]);
         } else if (data.type === "ERROR") {
           setIsTyping(false);
@@ -91,13 +113,46 @@ export const RecipeChatbot: React.FC<RecipeChatbotProps> = ({ recipeId }) => {
     };
   }, [isOpen]);
 
+  // Support external triggers via custom event
+  useEffect(() => {
+    const handleOpenEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ query?: string; autoSend?: boolean }>;
+      const query = customEvent.detail?.query || "";
+      const autoSend = !!customEvent.detail?.autoSend;
+
+      setIsOpen(true);
+
+      if (query) {
+        if (autoSend) {
+          if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+            handleSendMessage(query);
+          } else {
+            pendingMessageRef.current = query;
+          }
+        } else {
+          setInputMessage(query);
+        }
+      }
+    };
+
+    window.addEventListener("open-recipe-chatbot", handleOpenEvent);
+    return () => {
+      window.removeEventListener("open-recipe-chatbot", handleOpenEvent);
+    };
+  }, [status, activeRecipeId]);
+
   // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping, chatError]);
 
   const handleSendMessage = (text: string) => {
-    if (!text.trim() || !socketRef.current || status !== "connected") return;
+    if (!text.trim()) return;
+    if (!socketRef.current || status !== "connected") {
+      pendingMessageRef.current = text;
+      setIsOpen(true);
+      return;
+    }
 
     setChatError(null);
     const payload = {
@@ -175,7 +230,28 @@ export const RecipeChatbot: React.FC<RecipeChatbotProps> = ({ recipeId }) => {
                       : "bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 rounded-tl-none shadow-sm"
                   }`}>
                     {msg.role === "assistant" ? (
-                      <FormattedAiMessage content={msg.message} />
+                      <div>
+                        <FormattedAiMessage content={msg.message} />
+                        {msg.generatedRecipe && (
+                          <div className="mt-3 p-3 bg-amber-50/70 dark:bg-amber-950/40 rounded-xl border border-amber-200/60 dark:border-amber-900/60 text-xs space-y-2">
+                            <div className="font-bold text-amber-900 dark:text-amber-300 text-sm">
+                              {msg.generatedRecipe.title}
+                            </div>
+                            {msg.generatedRecipe.description && (
+                              <p className="text-zinc-600 dark:text-zinc-400 text-[11px] leading-snug">
+                                {msg.generatedRecipe.description}
+                              </p>
+                            )}
+                            <div className="flex flex-wrap gap-2 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400">
+                              <span>⏱ {msg.generatedRecipe.cookingTime} mins</span>
+                              <span>👥 {msg.generatedRecipe.servings} servings</span>
+                              {msg.generatedRecipe.nutrition?.calories && (
+                                <span>🔥 {msg.generatedRecipe.nutrition.calories} kcal</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       msg.message
                     )}

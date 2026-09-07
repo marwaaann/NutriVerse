@@ -2,11 +2,13 @@ import React, { useEffect, useState } from "react";
 import { recipeService } from "../services/recipeService";
 import type { RecipeResponse } from "../services/recipeService";
 import { Link } from "react-router-dom";
-import { Clock, Plus, BookOpen, ChevronRight, Tag } from "lucide-react";
+import { Clock, Plus, BookOpen, ChevronRight, Tag, Trash2, Loader2 } from "lucide-react";
+import { showToast } from "../utils/toast";
 
 export const RecipesList: React.FC = () => {
   const [recipes, setRecipes] = useState<RecipeResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -21,6 +23,28 @@ export const RecipesList: React.FC = () => {
         setIsLoading(false);
       });
   }, []);
+
+  const handleDelete = async (recipeId: string, recipeTitle: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!window.confirm(`Are you sure you want to delete "${recipeTitle}"?`)) {
+      return;
+    }
+
+    setDeletingId(recipeId);
+    try {
+      await recipeService.deleteRecipe(recipeId);
+      setRecipes((prev) => prev.filter((r) => r._id !== recipeId));
+      showToast.success("Recipe deleted successfully");
+    } catch (err: any) {
+      console.error("Failed to delete recipe:", err);
+      const errMsg = err?.response?.data?.message || "Failed to delete recipe.";
+      showToast.error(errMsg);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -118,12 +142,26 @@ export const RecipesList: React.FC = () => {
                   </div>
                 )}
 
-                <Link
-                  to={`/recipes/${recipe._id}`}
-                  className="flex items-center justify-center gap-1 w-full bg-zinc-50 dark:bg-zinc-800 hover:bg-amber-500 dark:hover:bg-amber-600 text-zinc-700 dark:text-zinc-200 hover:text-white font-bold py-2 rounded-xl transition-all text-sm cursor-pointer"
-                >
-                  View Details <ChevronRight className="h-4 w-4" />
-                </Link>
+                <div className="flex items-center gap-2 mt-auto">
+                  <Link
+                    to={`/recipes/${recipe._id}`}
+                    className="flex-1 flex items-center justify-center gap-1 bg-zinc-50 dark:bg-zinc-800 hover:bg-amber-500 dark:hover:bg-amber-600 text-zinc-700 dark:text-zinc-200 hover:text-white font-bold py-2 rounded-xl transition-all text-sm cursor-pointer"
+                  >
+                    View Details <ChevronRight className="h-4 w-4" />
+                  </Link>
+                  <button
+                    onClick={(e) => handleDelete(recipe._id, recipe.title, e)}
+                    disabled={deletingId === recipe._id}
+                    className="p-2 bg-red-50 dark:bg-red-950/30 hover:bg-red-500 text-red-600 hover:text-white border border-red-200 dark:border-red-900/40 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+                    title="Delete recipe"
+                  >
+                    {deletingId === recipe._id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           ))}

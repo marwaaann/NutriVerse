@@ -28,7 +28,8 @@ export interface IAIService {
   generateMealPlan(
     preferencesContext: Record<string, any>,
     availableRecipes: any[],
-    dateStr?: string
+    dateStr?: string,
+    avoidDishes?: string[]
   ): Promise<any>;
 
   suggestMealSwaps(
@@ -44,4 +45,13 @@ export interface IAIService {
     preferences: any,
     recipesContext: any
   ): Promise<any>;
+
+  generateIngredientsForDishes(
+    dishTitles: string[]
+  ): Promise<Array<{
+    name: string;
+    quantity: number;
+    unit: string;
+    category: string;
+  }>>;
 }

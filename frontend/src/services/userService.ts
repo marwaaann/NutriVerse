@@ -9,6 +9,23 @@ export interface UserResponse {
   isVerified: boolean;
   isBlocked: boolean;
   createdAt: string;
+  onboardingCompleted?: boolean;
+  height?: number;
+  heightUnit?: "cm" | "ft/in";
+  weight?: number;
+  weightUnit?: "kg" | "lbs";
+  age?: number;
+  gender?: "Male" | "Female" | "Other" | "Prefer not to say";
+  activityLevel?: "Sedentary" | "Lightly Active" | "Moderately Active" | "Very Active" | "Extremely Active";
+  bmi?: number;
+  bmiCategory?: "Underweight" | "Normal Weight" | "Overweight" | "Obese";
+  healthGoal?: string;
+  dietaryPreference?: string;
+  allergies?: string[];
+  foodPreferences?: string[];
+  preferredCuisines?: string[];
+  mealsPerDay?: number;
+  dailyCalorieTarget?: number;
 }
 
 export const userService = {
@@ -19,8 +36,14 @@ export const userService = {
     return response.data.data;
   },
 
-  async updateProfile(fullname: string): Promise<UserResponse> {
-    const response = await axiosInstance.put("/auth/profile", { fullname });
+  async updateProfile(data: Partial<UserResponse> | string): Promise<UserResponse> {
+    const payload = typeof data === "string" ? { fullname: data } : data;
+    const response = await axiosInstance.put("/auth/profile", payload);
+    return response.data.data;
+  },
+
+  async completeOnboarding(data: any): Promise<any> {
+    const response = await axiosInstance.post("/api/mealplanner/onboarding", data);
     return response.data.data;
   },
 

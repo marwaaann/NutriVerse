@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import axiosInstance from "../api/axiosInstance";
 import { showToast } from "../utils/toast";
@@ -12,7 +12,14 @@ import {
   MessageSquare, 
   Plus, 
   HelpCircle,
-  Video
+  Video,
+  CheckSquare,
+  Square,
+  MessageCircle,
+  Scale,
+  Target,
+  ChevronRight,
+  CheckCircle2
 } from "lucide-react";
 
 interface MealSlot {
@@ -48,17 +55,26 @@ const cleanDishName = (name: string): string => {
 
 export const Dashboard: React.FC = () => {
   const { data: user } = useAuth();
+  const navigate = useNavigate();
 
   // Selected date state (defaults to today YYYY-MM-DD)
   const todayStr = new Date().toISOString().split("T")[0];
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const [mealPlans, setMealPlans] = useState<Record<string, MealPlan>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [isGeneratingWeek, setIsGeneratingWeek] = useState(false);
+  const [isGroceryLoading, setIsGroceryLoading] = useState(false);
+  const [selectedMealTypes, setSelectedMealTypes] = useState<string[]>([]);
   
   // Swapping states
   const [swappingSlot, setSwappingSlot] = useState<{ date: string; mealType: string; currentMeal: MealSlot } | null>(null);
   const [swapAlternatives, setSwapAlternatives] = useState<MealSlot[]>([]);
   const [isAlternativesLoading, setIsAlternativesLoading] = useState(false);
+
+  // Clear selected meals when switching date
+  useEffect(() => {
+    setSelectedMealTypes([]);
+  }, [selectedDate]);
 
   // Load plans for the next 7 days
   const loadMealPlans = async () => {
@@ -110,6 +126,27 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  const handleGenerateWeekPlan = async () => {
+    setIsGeneratingWeek(true);
+    try {
+      const response = await axiosInstance.post("/api/mealplanner/plan/generate-week", {
+        startDate: todayStr,
+      });
+      const generatedPlans: MealPlan[] = response.data.data;
+      const plansMap: Record<string, MealPlan> = { ...mealPlans };
+      generatedPlans.forEach(plan => {
+        plansMap[plan.date] = plan;
+      });
+      setMealPlans(plansMap);
+      showToast.success("7-Day varied meal plan generated!");
+    } catch (err) {
+      console.error(err);
+      showToast.error("Failed to generate weekly meal plan.");
+    } finally {
+      setIsGeneratingWeek(false);
+    }
+  };
+
   const handleOpenSwap = async (date: string, mealType: string, currentMeal: MealSlot) => {
     setSwappingSlot({ date, mealType, currentMeal });
     setIsAlternativesLoading(true);
@@ -151,35 +188,135 @@ export const Dashboard: React.FC = () => {
   };
 
   const handleAddToGrocery = async (meal: MealSlot) => {
+    setIsGroceryLoading(true);
     try {
-      // Fetch current dates range
-      const startDate = selectedDate;
-      const endDate = selectedDate;
-      
-      // Auto-generates shopping items
-      await axiosInstance.post("/api/mealplanner/grocery/generate", { startDate, endDate });
-      showToast.success(`Ingredients for "${meal.title}" added to grocery list!`);
+      const cleanTitle = cleanDishName(meal.title);
+      const response = await axiosInstance.post("/api/mealplanner/grocery/from-meals", {
+        title: `Grocery: ${cleanTitle}`,
+        meals: [{ title: meal.title, servings: meal.servings || 2, recipeId: meal.recipeId }],
+        startDate: selectedDate,
+        endDate: selectedDate
+      });
+      const list = response.data.data;
+      showToast.success(`Ingredients for "${cleanTitle}" added to grocery list!`);
+      navigate(`/grocery?listId=${list._id}`);
     } catch (err) {
       console.error(err);
       showToast.error("Failed to add to grocery list.");
+    } finally {
+      setIsGroceryLoading(false);
+    }
+  };
+
+  const toggleMealSelection = (mealType: string) => {
+    setSelectedMealTypes(prev =>
+      prev.includes(mealType) ? prev.filter(t => t !== mealType) : [...prev, mealType]
+    );
+  };
+
+  const handleSelectAllMeals = () => {
+    if (!activePlan) return;
+    const available = ["breakfast", "lunch", "snack", "dinner"].filter(
+      type => Boolean(activePlan[type as keyof MealPlan])
+    );
+    if (selectedMealTypes.length === available.length) {
+      setSelectedMealTypes([]);
+    } else {
+      setSelectedMealTypes(available);
+    }
+  };
+
+  const handleBuySelectedGrocery = async () => {
+    if (!activePlan || selectedMealTypes.length === 0) return;
+    setIsGroceryLoading(true);
+    try {
+      const mealsToBuy = selectedMealTypes
+        .map(type => activePlan[type as keyof MealPlan] as MealSlot | undefined)
+        .filter((m): m is MealSlot => Boolean(m));
+
+      if (mealsToBuy.length === 0) return;
+
+      const cleanTitles = mealsToBuy.map(m => cleanDishName(m.title));
+      const title = mealsToBuy.length === 1
+        ? `Grocery: ${cleanTitles[0]}`
+        : `Grocery: ${cleanTitles.slice(0, 2).join(" & ")}${cleanTitles.length > 2 ? ` (+${cleanTitles.length - 2} more)` : ""}`;
+
+      const response = await axiosInstance.post("/api/mealplanner/grocery/from-meals", {
+        title,
+        meals: mealsToBuy.map(m => ({
+          title: m.title,
+          servings: m.servings || 2,
+          recipeId: m.recipeId
+        })),
+        startDate: selectedDate,
+        endDate: selectedDate
+      });
+      const list = response.data.data;
+      showToast.success(`Added ${list.items?.length || 0} ingredients for ${mealsToBuy.length} meal(s)!`);
+      navigate(`/grocery?listId=${list._id}`);
+    } catch (err) {
+      console.error(err);
+      showToast.error("Failed to generate grocery list for selected meals.");
+    } finally {
+      setIsGroceryLoading(false);
+    }
+  };
+
+  const handleShareSelectedWhatsApp = async () => {
+    if (!activePlan || selectedMealTypes.length === 0) return;
+    setIsGroceryLoading(true);
+    try {
+      const mealsToBuy = selectedMealTypes
+        .map(type => activePlan[type as keyof MealPlan] as MealSlot | undefined)
+        .filter((m): m is MealSlot => Boolean(m));
+
+      if (mealsToBuy.length === 0) return;
+
+      const cleanTitles = mealsToBuy.map(m => cleanDishName(m.title));
+      const title = mealsToBuy.length === 1
+        ? `Grocery: ${cleanTitles[0]}`
+        : `Grocery: ${cleanTitles.slice(0, 2).join(" & ")}${cleanTitles.length > 2 ? ` (+${cleanTitles.length - 2} more)` : ""}`;
+
+      const response = await axiosInstance.post("/api/mealplanner/grocery/from-meals", {
+        title,
+        meals: mealsToBuy.map(m => ({
+          title: m.title,
+          servings: m.servings || 2,
+          recipeId: m.recipeId
+        })),
+        startDate: selectedDate,
+        endDate: selectedDate
+      });
+      const list = response.data.data;
+      const items: any[] = list.items || [];
+
+      let message = `🛒 *NutriVerse Shopping List* (${mealsToBuy.length} Dishes: ${cleanTitles.join(" & ")})\n\n`;
+      message += `*REQUIRED INGREDIENTS (${items.length}):*\n`;
+      items.forEach((item) => {
+        message += `☐ ${item.name} (${item.quantity} ${item.unit})\n`;
+      });
+      message += `\nGenerated by NutriVerse Assistant`;
+
+      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, "_blank");
+      showToast.success(`Opened WhatsApp for ${mealsToBuy.length} dish(es)!`);
+    } catch (err) {
+      console.error(err);
+      showToast.error("Failed to share grocery list for selected meals.");
+    } finally {
+      setIsGroceryLoading(false);
     }
   };
 
   const handleTriggerChat = (mealTitle: string) => {
-    const floatBtn = document.querySelector("button.fixed.bottom-6.right-6") as HTMLButtonElement | null;
-    if (floatBtn) {
-      // Toggle float chatbot
-      floatBtn.click();
-      
-      // Inject query content into chatbot input if available
-      setTimeout(() => {
-        const inputEl = document.querySelector('input[placeholder*="Ask a question"]') as HTMLInputElement | null;
-        if (inputEl) {
-          inputEl.value = `Tell me about the recipe for ${mealTitle}`;
-          inputEl.dispatchEvent(new Event("input", { bubbles: true }));
-        }
-      }, 300);
-    }
+    window.dispatchEvent(
+      new CustomEvent("open-recipe-chatbot", {
+        detail: {
+          query: `Tell me about the recipe for ${cleanDishName(mealTitle)}`,
+          autoSend: true,
+        },
+      })
+    );
   };
 
   // Generate Date Buttons for Selection
@@ -238,7 +375,16 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Quick actions panel */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleGenerateWeekPlan}
+            disabled={isGeneratingWeek}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-300 rounded-xl text-xs font-bold border border-amber-200/60 dark:border-amber-900/60 transition cursor-pointer disabled:opacity-50"
+            title="Generate a fresh, non-repeating 7-day meal plan based on your preferences"
+          >
+            <RotateCw className={`h-3.5 w-3.5 ${isGeneratingWeek ? "animate-spin text-amber-600" : "text-amber-600 dark:text-amber-400"}`} />
+            <span>{isGeneratingWeek ? "Generating Week..." : "Refresh Week Plan"}</span>
+          </button>
           <Link
             to="/recipes/create"
             className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold shadow-sm transition"
@@ -251,6 +397,110 @@ export const Dashboard: React.FC = () => {
           >
             <Sparkles className="h-4 w-4 text-amber-500 animate-pulse" /> Ask AI
           </Link>
+        </div>
+      </div>
+
+      {/* Real-Time BMI & Caloric Health Overview Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        {/* BMI Card */}
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-3xl shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 uppercase tracking-wider">
+              <Scale className="h-4 w-4 text-amber-500" /> Body Mass Index
+            </span>
+            <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
+              user?.bmiCategory === "Underweight" ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900" :
+              user?.bmiCategory === "Normal Weight" ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900" :
+              user?.bmiCategory === "Overweight" ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900" :
+              "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900"
+            }`}>
+              {user?.bmiCategory || "Normal Weight"}
+            </span>
+          </div>
+          <div className="my-2">
+            <div className="text-3xl font-black text-zinc-900 dark:text-white flex items-baseline gap-2">
+              {user?.bmi || 22.5}
+              <span className="text-xs font-semibold text-zinc-400">
+                ({user?.weight || 68} {user?.weightUnit || "kg"})
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 pt-1 border-t border-zinc-100 dark:border-zinc-800">
+            <span>Height: {user?.height || 170} {user?.heightUnit || "cm"}</span>
+            <Link to="/profile" className="text-amber-600 dark:text-amber-400 hover:text-amber-700 font-bold flex items-center gap-0.5">
+              Profile <ChevronRight className="h-3 w-3" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Real-time Calorie Target & Planned Meter */}
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-3xl shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 uppercase tracking-wider">
+              <Flame className="h-4 w-4 text-orange-500" /> Daily Calories
+            </span>
+            <span className="text-[10px] font-black bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-full border border-orange-200 dark:border-orange-900">
+              {dailyCalories > 0 ? `${Math.round((dailyCalories / (user?.dailyCalorieTarget || 2000)) * 100)}% Target` : "Awaiting Plan"}
+            </span>
+          </div>
+          <div className="my-2">
+            <div className="text-3xl font-black text-zinc-900 dark:text-white flex items-baseline gap-1.5">
+              {dailyCalories}
+              <span className="text-sm font-bold text-zinc-400">
+                / {user?.dailyCalorieTarget || 2000} kcal
+              </span>
+            </div>
+            {/* Real-time progress bar */}
+            <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full mt-2 overflow-hidden">
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${
+                  dailyCalories > (user?.dailyCalorieTarget || 2000) + 150
+                    ? "bg-rose-500"
+                    : dailyCalories >= (user?.dailyCalorieTarget || 2000) - 150
+                    ? "bg-emerald-500"
+                    : "bg-amber-500"
+                }`}
+                style={{ width: `${Math.min(100, Math.round((dailyCalories / (user?.dailyCalorieTarget || 2000)) * 100))}%` }}
+              />
+            </div>
+          </div>
+          <div className="text-[11px] text-zinc-500 dark:text-zinc-400 pt-1 border-t border-zinc-100 dark:border-zinc-800 flex justify-between">
+            <span>
+              {dailyCalories === 0 ? "No meals planned" :
+               dailyCalories > (user?.dailyCalorieTarget || 2000) ? `+${dailyCalories - (user?.dailyCalorieTarget || 2000)} kcal surplus` :
+               `${(user?.dailyCalorieTarget || 2000) - dailyCalories} kcal remaining`}
+            </span>
+            <span className="font-semibold text-zinc-700 dark:text-zinc-300">
+              {selectedDate === todayStr ? "Today's Target" : selectedDate}
+            </span>
+          </div>
+        </div>
+
+        {/* Health Goal & Dietary Track Card */}
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-3xl shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 uppercase tracking-wider">
+              <Target className="h-4 w-4 text-emerald-500" /> Active Goal
+            </span>
+            <span className="text-[10px] font-black bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-900">
+              {user?.activityLevel || "Active"}
+            </span>
+          </div>
+          <div className="my-2">
+            <h4 className="text-base font-black text-zinc-900 dark:text-white line-clamp-1">
+              {user?.healthGoal || "Maintain Current Weight"}
+            </h4>
+            <p className="text-xs text-amber-600 dark:text-amber-400 font-bold mt-1">
+              🥗 {user?.dietaryPreference || "Non-Vegetarian"}
+              {user?.allergies && user.allergies.length > 0 && ` • ${user.allergies.length} allergy filter${user.allergies.length > 1 ? "s" : ""}`}
+            </p>
+          </div>
+          <div className="text-[11px] text-zinc-500 dark:text-zinc-400 pt-1 border-t border-zinc-100 dark:border-zinc-800 flex justify-between">
+            <span>{user?.mealsPerDay || 3} meals / day</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3" /> Personalized
+            </span>
+          </div>
         </div>
       </div>
 
@@ -300,20 +550,104 @@ export const Dashboard: React.FC = () => {
           ) : (
             // Meal plan items list
             <div className="space-y-6">
+              {/* Multi-Meal Grocery Action Bar */}
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-3xl shadow-sm flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleSelectAllMeals}
+                    className="flex items-center gap-2 text-xs font-bold text-zinc-700 dark:text-zinc-200 hover:text-amber-600 dark:hover:text-amber-400 transition cursor-pointer"
+                  >
+                    {selectedMealTypes.length > 0 &&
+                    selectedMealTypes.length ===
+                      ["breakfast", "lunch", "snack", "dinner"].filter(t => Boolean(activePlan[t as keyof MealPlan])).length ? (
+                      <CheckSquare className="h-4 w-4 text-amber-500" />
+                    ) : (
+                      <Square className="h-4 w-4 text-zinc-400" />
+                    )}
+                    <span>
+                      {selectedMealTypes.length > 0 ? "Deselect All Meals" : "Select Multiple Meals"}
+                    </span>
+                  </button>
+                  {selectedMealTypes.length > 0 && (
+                    <span className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 font-bold px-2.5 py-0.5 rounded-full">
+                      {selectedMealTypes.length} meal{selectedMealTypes.length > 1 ? "s" : ""} selected
+                    </span>
+                  )}
+                </div>
+
+                {selectedMealTypes.length > 0 ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleBuySelectedGrocery}
+                      disabled={isGroceryLoading}
+                      className="flex items-center gap-2 px-3.5 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer hover:scale-105 duration-150"
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                      <span>
+                        {isGroceryLoading
+                          ? "Creating List..."
+                          : `Buy Grocery (${selectedMealTypes.length})`}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleShareSelectedWhatsApp}
+                      disabled={isGroceryLoading}
+                      className="flex items-center gap-2 px-3.5 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer hover:scale-105 duration-150"
+                      title="Share grocery list for selected meals on WhatsApp"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      <span>
+                        {selectedMealTypes.length === 2
+                          ? "Share Both on WhatsApp"
+                          : `Share on WhatsApp (${selectedMealTypes.length})`}
+                      </span>
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-zinc-400">
+                    Tip: Select breakfast & lunch together to build a combined grocery list
+                  </p>
+                )}
+              </div>
+
               {["breakfast", "lunch", "snack", "dinner"].map((mealType) => {
                 const meal = activePlan[mealType as keyof MealPlan] as MealSlot | undefined;
                 if (!meal) return null;
 
+                const isSelected = selectedMealTypes.includes(mealType);
+
                 return (
                   <div 
                     key={mealType} 
-                    className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-6 rounded-3xl shadow-sm flex flex-col md:flex-row justify-between gap-6 hover:shadow-md transition duration-200"
+                    className={`bg-white dark:bg-zinc-900 border p-6 rounded-3xl shadow-sm flex flex-col md:flex-row justify-between gap-6 hover:shadow-md transition duration-200 ${
+                      isSelected
+                        ? "border-amber-400 dark:border-amber-600 ring-2 ring-amber-400/20"
+                        : "border-zinc-100 dark:border-zinc-800"
+                    }`}
                   >
                     <div className="space-y-3 flex-1">
                       <div className="flex items-center gap-2.5">
-                        <span className="text-xs font-bold uppercase tracking-wider bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full">
-                          {mealType}
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => toggleMealSelection(mealType)}
+                          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition cursor-pointer ${
+                            isSelected
+                              ? "bg-amber-500 border-amber-500 text-white shadow-sm"
+                              : "bg-amber-50 dark:bg-amber-900/30 border-transparent text-amber-700 dark:text-amber-400 hover:border-amber-300"
+                          }`}
+                          title={`Select ${mealType} for multi-meal grocery buying`}
+                        >
+                          {isSelected ? (
+                            <CheckSquare className="h-3.5 w-3.5" />
+                          ) : (
+                            <Square className="h-3.5 w-3.5 opacity-60" />
+                          )}
+                          <span className="uppercase tracking-wider">{mealType}</span>
+                        </button>
                         {meal.calories > 400 && (
                           <span className="text-[10px] font-semibold bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                             <Activity className="h-3 w-3" /> High Protein
@@ -368,16 +702,17 @@ export const Dashboard: React.FC = () => {
 
                       <button
                         onClick={() => handleAddToGrocery(meal)}
-                        title="Add to grocery list"
-                        className="p-2 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400 rounded-xl transition"
+                        disabled={isGroceryLoading}
+                        title="Add to grocery list and view"
+                        className="p-2 bg-zinc-50 hover:bg-amber-50 dark:bg-zinc-800 dark:hover:bg-amber-950/30 text-zinc-600 hover:text-amber-600 dark:text-zinc-400 dark:hover:text-amber-400 rounded-xl transition cursor-pointer"
                       >
                         <ShoppingCart className="h-3.5 w-3.5" />
                       </button>
 
                       <button
                         onClick={() => handleTriggerChat(meal.title)}
-                        title="Ask AI"
-                        className="p-2 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400 rounded-xl transition"
+                        title="Ask AI recipe details"
+                        className="p-2 bg-zinc-50 hover:bg-amber-50 dark:bg-zinc-800 dark:hover:bg-amber-950/30 text-zinc-600 hover:text-amber-600 dark:text-zinc-400 dark:hover:text-amber-400 rounded-xl transition cursor-pointer"
                       >
                         <MessageSquare className="h-3.5 w-3.5" />
                       </button>
@@ -436,12 +771,20 @@ export const Dashboard: React.FC = () => {
           {/* Daily Nutrition Targets */}
           {activePlan && (
             <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-6 rounded-3xl shadow-sm space-y-5">
-              <h3 className="font-bold text-lg text-zinc-900 dark:text-white">Daily Target Summary</h3>
+              <div className="flex justify-between items-baseline">
+                <h3 className="font-bold text-lg text-zinc-900 dark:text-white">Daily Target Summary</h3>
+                <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                  Target: {user?.dailyCalorieTarget || 2000} kcal
+                </span>
+              </div>
               
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-amber-50/30 p-3 rounded-2xl border border-amber-100/50 text-center">
-                  <span className="text-[10px] font-semibold uppercase text-amber-700 tracking-wider">Calories</span>
-                  <p className="text-lg font-black text-amber-900 mt-0.5">{dailyCalories} kcal</p>
+                <div className="bg-amber-50/30 dark:bg-amber-950/20 p-3 rounded-2xl border border-amber-100/50 dark:border-amber-900/40 text-center">
+                  <span className="text-[10px] font-semibold uppercase text-amber-700 dark:text-amber-400 tracking-wider">Calories</span>
+                  <p className="text-lg font-black text-amber-900 dark:text-amber-300 mt-0.5">{dailyCalories} kcal</p>
+                  <span className="text-[9px] text-zinc-400 block mt-0.5">
+                    {Math.round((dailyCalories / (user?.dailyCalorieTarget || 2000)) * 100)}% of goal
+                  </span>
                 </div>
 
                 <div className="bg-green-50/30 p-3 rounded-2xl border border-green-100/50 text-center">

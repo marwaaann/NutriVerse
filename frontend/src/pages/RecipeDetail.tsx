@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { recipeService } from "../services/recipeService";
 import type { RecipeResponse } from "../services/recipeService";
-import { ArrowLeft, Clock, Users, Flame, HeartPulse, RefreshCw, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Clock, Users, Flame, HeartPulse, RefreshCw, ShoppingCart, Trash2, Loader2 } from "lucide-react";
+import { showToast } from "../utils/toast";
 
 export const RecipeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -10,6 +11,7 @@ export const RecipeDetail: React.FC = () => {
   const [recipe, setRecipe] = useState<RecipeResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -36,12 +38,32 @@ export const RecipeDetail: React.FC = () => {
         // Reload recipe
         const refreshedRecipe = await recipeService.getRecipe(id);
         setRecipe(refreshedRecipe);
+        showToast.success("Nutrition recalculated successfully!");
       }
     } catch (err) {
       console.error("Analysis failed:", err);
-      alert("Failed to analyze nutrition. Please try again.");
+      showToast.error("Failed to analyze nutrition. Please try again.");
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handleDeleteRecipe = async () => {
+    if (!recipe) return;
+    if (!window.confirm(`Are you sure you want to delete "${recipe.title}"?`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await recipeService.deleteRecipe(recipe._id);
+      showToast.success("Recipe deleted successfully!");
+      navigate("/recipes");
+    } catch (err: any) {
+      console.error("Failed to delete recipe:", err);
+      const errMsg = err?.response?.data?.message || "Failed to delete recipe. Please try again.";
+      showToast.error(errMsg);
+      setIsDeleting(false);
     }
   };
 
@@ -106,20 +128,20 @@ export const RecipeDetail: React.FC = () => {
                 <ShoppingCart className="h-4 w-4" /> Shop Ingredients
               </button>
               <button
-                onClick={async () => {
-                  if (confirm("Are you sure you want to delete this recipe?")) {
-                    try {
-                      await recipeService.deleteRecipe(recipe._id);
-                      navigate("/recipes");
-                    } catch (err) {
-                      console.error(err);
-                      alert("Failed to delete recipe.");
-                    }
-                  }
-                }}
-                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
+                onClick={handleDeleteRecipe}
+                disabled={isDeleting}
+                className="flex items-center gap-1.5 px-4 py-2 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer disabled:cursor-not-allowed"
+                title="Delete this recipe"
               >
-                Delete
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4" /> Delete
+                  </>
+                )}
               </button>
             </div>
           </div>

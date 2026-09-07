@@ -1,9 +1,14 @@
-﻿import {
+import {
   recipeImageService,
   buildRecipeImagePrompt,
 } from "../src/services/recipe_image_service";
+import { cloudinaryService } from "../src/services/cloudinary_service";
 
 describe("RecipeImageService Tests", () => {
+  beforeEach(() => {
+    jest.spyOn(cloudinaryService, "isAvailable").mockReturnValue(true);
+    jest.spyOn(cloudinaryService, "uploadRecipeImage").mockResolvedValue(null);
+  });
   it("should generate a rich culinary prompt containing title, cuisine, and ingredients", () => {
     const prompt = buildRecipeImagePrompt({
       title: "Spicy Paneer Tikka",
