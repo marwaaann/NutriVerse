@@ -1,5 +1,11 @@
 # 🥗 NutriVerse — AI-Powered Recipe & Nutrition Assistant
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-nutriverse.marwanshafi.tech-amber?style=for-the-badge&logo=googlechrome&logoColor=white)](https://nutriverse.marwanshafi.tech/)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-marwaaann%2FNutriVerse-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/marwaaann/NutriVerse)
+
+> 🚀 **Live Application:** [https://nutriverse.marwanshafi.tech/](https://nutriverse.marwanshafi.tech/)  
+> 📂 **GitHub Repository:** [https://github.com/marwaaann/NutriVerse](https://github.com/marwaaann/NutriVerse)
+
 NutriVerse is a next-generation, full-stack recipe manager and real-time AI nutrition assistant. Built on clean, layered architecture principles with dependency injection, it automates ingredient normalization and nutritional analysis using the USDA database, offers a context-aware cooking chatbot via WebSockets, and features custom tools for meal planning, grocery list generation, and notifications.
 
 ---
@@ -165,7 +171,9 @@ npm test
 
 ---
 
-## 👤 Author
+## 👤 Author & Project Links
+*   🌐 **Live Application:** [https://nutriverse.marwanshafi.tech/](https://nutriverse.marwanshafi.tech/)
+*   📂 **GitHub Repository:** [https://github.com/marwaaann/NutriVerse](https://github.com/marwaaann/NutriVerse)
 *   **Marwan Shafi**
     *   GitHub: [@marwaaann](https://github.com/marwaaann)
     *   Email: [2004marwanshafi@gmail.com](mailto:2004marwanshafi@gmail.com)
